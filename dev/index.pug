@@ -11,20 +11,23 @@ html(lang="en")
         .container
             .row
                 .weather
-                    #icon.weather__icon.updatable
-                    .weather__list
-                        p.text.text_title Temperature:
-                        p#temp.text.updatable
-                        p.text.text_title Pressure:
-                        p#pressure.text.updatable
-                        p.text.text_title Humidity:
-                        p#humidity.text.updatable
-                        p.text.text_title Latitude:
-                        p#lat.text.updatable
-                        p.text.text_title Longitude:
-                        p#lng.text.updatable
-                        p.text.text_title Address:
-                        p#address.text.updatable
+                    .updatable
+                        .weather__head
+                            #icon.weather__icon
+                            .weather__main
+                                p#temp.weather__temp.text
+                                p#sky.weather__sky.text
+                        .weather__list
+                            p.text.text_title Pressure:
+                            p#pressure.text
+                            p.text.text_title Humidity:
+                            p#humidity.text
+                            p.text.text_title Latitude:
+                            p#lat.text
+                            p.text.text_title Longitude:
+                            p#lng.text
+                            p.text.text_title Address:
+                            p#address.text
             .row
                 #map.map
         script(type="text/javascript" src="js/app.js")

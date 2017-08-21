@@ -38,7 +38,7 @@ body
   min-height: 160px
   width: 180px
   padding: 10px
-  border-radius: 2px
+  border-radius: 1.5px
   background: $face
   box-shadow: $shadow 0 1px 4px -1px
   z-index: 10
@@ -46,8 +46,21 @@ body
 .weather__icon
   height: 54px
 
+.weather__head
+  display: flex
+  flex-direction: row
+
+.weather__main
+  margin-left: 20px
+
+.weather__temp
+  font-size: 1.4rem
+
+.sky
+  font-size: 1.2rem
+
 .updatable
-  transition: opacity 0.6s
+  transition: opacity 0.5s
 
 .transparent
   opacity: 0

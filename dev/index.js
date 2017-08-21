@@ -6,12 +6,31 @@
 
 import App from './js/app';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
 
     let app = new App();
     app.init();
 
     function initMap() {
+
+        let map, marker;
+
+        function getLocation(cb) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    cb({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    })
+                },
+
+                function() {
+                    cb({
+                        lat: 0,
+                        lng: 0
+                    })
+                });
+        }
 
         function initMarker(position) {
             marker = new google.maps.Marker({
@@ -22,18 +41,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 map: map,
                 draggable: true
             });
+
             map.setCenter(marker.getPosition());
-            marker.addListener('dragend', () => {
+            marker.addListener('dragend', function() {
                 app.store.dispatch(app.actions.location({
                     lat: marker.getPosition().lat(),
                     lng: marker.getPosition().lng()
                 }))
             });
+
             app.store.dispatch(app.actions.location(position));
             app.getWeather(position);
         }
 
-        let map = new google.maps.Map(document.getElementById('map'), {
+        map = new google.maps.Map(document.getElementById('map'), {
             zoom: 4,
             center: {
                 lat: 0,
@@ -47,12 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
             fullscreenControl: false
         });
 
-        let marker;
-
         app.store.dispatch(app.actions.wait());
-        app.getLocation(initMarker);
+        getLocation(initMarker);
 
-        map.addListener('click', (e) => {
+        map.addListener('click', function(e) {
             marker.setPosition(e.latLng);
             app.store.dispatch(app.actions.location({
                 lat: e.latLng.lat(),

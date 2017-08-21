@@ -63,37 +63,10 @@ export default class App {
      * Initializing the application object
      */
     init() {
-
         this.store.subscribe(() => {
             let state = this.store.getState();
             this.filter(state);
         });
-    }
-
-    /**
-     * Register event handlers
-     * @param {array} array
-     */
-    on(array) {
-        array.forEach(item => {
-            if (typeof item.event === 'string') {
-                this.addListener(item.event, item.selector, item.action);
-            }
-        });
-
-    }
-
-    /**
-     * Add event listener
-     * @param {string} event
-     * @param {string} selector
-     * @param {function} action
-     */
-    addListener(event, selector, action) {
-        if (typeof selector === 'string') {
-            let elements = document.querySelectorAll(selector);
-            elements.forEach(element => element.addEventListener(event, action, false));
-        }
     }
 
     /**
@@ -162,8 +135,8 @@ export default class App {
         switch (state.status) {
             case 'location':
                 this.store.dispatch(this.actions.wait());
-                this.getWeather(state.location);
                 this.getAddress(state.location);
+                this.getWeather(state.location);
                 break;
             default:
                 this.render(state);
@@ -176,27 +149,19 @@ export default class App {
      * @param state
      */
     render(state) {
-
-        const toArray = function(list) {
-            if (!list) {
-                return null;
-            }
-            return Array.prototype.slice.call(list);
-        };
-
-        const updatables = toArray(document.querySelectorAll('.updatable'));
+        console.log(state);
+        const updatables = document.querySelector('.updatable');
         const icon = document.querySelector('#icon');
         const address = document.querySelector('#address');
         switch (state.status) {
             case 'waiting':
-                updatables.forEach((item) => {
-                    item.classList.add('transparent');
-                });
+                updatables.classList.add('transparent');
                 break;
             case 'error':
                 break;
             case 'ready':
                 const temp = document.querySelector('#temp');
+                const sky = document.querySelector('#sky');
                 const pressure = document.querySelector('#pressure');
                 const humidity = document.querySelector('#humidity');
                 const lat = document.querySelector('#lat');
@@ -210,6 +175,7 @@ export default class App {
                         src: iconURL,
                         alt: state.weather.weather[0].description
                     }, null));
+                    sky.innerHTML = state.weather.weather[0].main;
                 }
                 if (state.weather.main !== void 0) {
                     temp.innerHTML = `${Math.round(state.weather.main.temp)} °C`;
@@ -218,9 +184,7 @@ export default class App {
                 }
                 lat.innerHTML = state.location.lat.toFixed(3);
                 lng.innerHTML = state.location.lng.toFixed(3);
-                updatables.forEach((item) => {
-                    item.classList.remove('transparent');
-                });
+                updatables.classList.remove('transparent');
                 break;
             case 'address':
                 address.innerHTML = state.address;
@@ -231,25 +195,8 @@ export default class App {
         }
     }
 
-    getLocation(cb) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                cb({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                })
-            },
-
-            () => {
-                cb({
-                    lat: 0,
-                    lng: 0
-                })
-            });
-    }
-
     getAddress(location) {
-        let url = `https://maps.googleapis.com/maps/api/geocode/json`;
+        let url = 'https://maps.googleapis.com/maps/api/geocode/json';
         ajax.get(url, {
             latlng: `${location.lat},${location.lng}`,
             key: 'AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78'
@@ -269,7 +216,7 @@ export default class App {
     }
 
     getWeather(location) {
-        let url = `https://fcc-weather-api.glitch.me/api/current`;
+        let url = 'https://fcc-weather-api.glitch.me/api/current';
         ajax.get(url, {
             lat: location.lat,
             lon: location.lng
