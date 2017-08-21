@@ -82,28 +82,51 @@ document.addEventListener('DOMContentLoaded', function () {
     app.init();
 
     function initMap() {
+
+        function initMarker(position) {
+            marker = new google.maps.Marker({
+                position: {
+                    lat: position.lat,
+                    lng: position.lng
+                },
+                map: map,
+                draggable: true
+            });
+            map.setCenter(marker.getPosition());
+            marker.addListener('dragend', function () {
+                app.store.dispatch(app.actions.location({
+                    lat: marker.getPosition().lat(),
+                    lng: marker.getPosition().lng()
+                }));
+            });
+            app.store.dispatch(app.actions.location(position));
+            app.getWeather(position);
+        }
+
         var map = new google.maps.Map(document.getElementById('map'), {
             zoom: 4,
-            center: { lat: 47, lng: 37.5 }
+            center: {
+                lat: 0,
+                lng: 0
+            },
+            mapTypeControlOptions: {
+                style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+                position: google.maps.ControlPosition.TOP_RIGHT
+            },
+            streetViewControl: false,
+            fullscreenControl: false
         });
-        var marker = new google.maps.Marker({
-            position: { lat: 47, lng: 37.5 },
-            map: map,
-            draggable: true
-        });
+
+        var marker = void 0;
+
+        app.store.dispatch(app.actions.wait());
+        app.getLocation(initMarker);
 
         map.addListener('click', function (e) {
             marker.setPosition(e.latLng);
             app.store.dispatch(app.actions.location({
                 lat: e.latLng.lat(),
                 lng: e.latLng.lng()
-            }));
-        });
-
-        marker.addListener('dragend', function () {
-            app.store.dispatch(app.actions.location({
-                lat: marker.getPosition().lat(),
-                lng: marker.getPosition().lng()
             }));
         });
     }
@@ -129,12 +152,15 @@ var _createClass = function () { function defineProperties(target, props) { for 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       * app.js
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       * Created by Andrii Sorokin on 08/20/17
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       * https://github.com/ignorantic/weather.git
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       */
 
 var _ajax = __webpack_require__(2);
 
 var _ajax2 = _interopRequireDefault(_ajax);
+
+var _htmlHelper = __webpack_require__(3);
+
+var _htmlHelper2 = _interopRequireDefault(_htmlHelper);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -151,6 +177,7 @@ var App = function () {
         // Create initial state
         this.initialState = {
             location: {},
+            address: '',
             weather: {},
             status: 'ready'
         };
@@ -170,6 +197,12 @@ var App = function () {
             location: function location(data) {
                 return {
                     type: 'location',
+                    data: data
+                };
+            },
+            address: function address(data) {
+                return {
+                    type: 'address',
                     data: data
                 };
             },
@@ -198,13 +231,6 @@ var App = function () {
             this.store.subscribe(function () {
                 var state = _this.store.getState();
                 _this.filter(state);
-            });
-
-            // Initial request
-            this.store.dispatch(this.actions.wait());
-            this.getLocation(function (position) {
-                _this.store.dispatch(_this.actions.location(position));
-                _this.getWeather(position);
             });
         }
 
@@ -295,6 +321,11 @@ var App = function () {
                         location: action.data,
                         status: 'location'
                     });
+                case 'address':
+                    return Object.assign({}, state, {
+                        address: action.data,
+                        status: 'address'
+                    });
                 case 'weather':
                     return Object.assign({}, state, {
                         weather: action.data,
@@ -311,6 +342,7 @@ var App = function () {
                 case 'location':
                     this.store.dispatch(this.actions.wait());
                     this.getWeather(state.location);
+                    this.getAddress(state.location);
                     break;
                 default:
                     this.render(state);
@@ -326,27 +358,53 @@ var App = function () {
     }, {
         key: 'render',
         value: function render(state) {
-            var weatherList = document.querySelector('.weather__list');
-            var temp = document.querySelector('#temp');
-            var pressure = document.querySelector('#pressure');
-            var humidity = document.querySelector('#humidity');
-            var lat = document.querySelector('#lat');
-            var lng = document.querySelector('#lng');
+
+            var toArray = function toArray(list) {
+                if (!list) {
+                    return null;
+                }
+                return Array.prototype.slice.call(list);
+            };
+
+            var updatables = toArray(document.querySelectorAll('.updatable'));
+            var icon = document.querySelector('#icon');
+            var address = document.querySelector('#address');
             switch (state.status) {
                 case 'waiting':
-                    weatherList.classList.add('transparent');
+                    updatables.forEach(function (item) {
+                        item.classList.add('transparent');
+                    });
                     break;
                 case 'error':
                     break;
                 case 'ready':
-                    if (state.weather.main !== void 0) {
-                        temp.innerText = 'Temperature: ' + state.weather.main.temp;
-                        pressure.innerText = 'Pressure: ' + state.weather.main.pressure;
-                        humidity.innerText = 'Humidity: ' + state.weather.main.humidity;
+                    var temp = document.querySelector('#temp');
+                    var pressure = document.querySelector('#pressure');
+                    var humidity = document.querySelector('#humidity');
+                    var lat = document.querySelector('#lat');
+                    var lng = document.querySelector('#lng');
+                    icon.innerHTML = '';
+                    if (Array.isArray(state.weather.weather) && state.weather.weather[0].icon !== void 0) {
+                        var iconURL = state.weather.weather[0].icon.split('?')[0];
+                        icon.innerHTML = '';
+                        icon.appendChild(_htmlHelper2.default.tag('img', null, {
+                            src: iconURL,
+                            alt: state.weather.weather[0].description
+                        }, null));
                     }
-                    lat.innerText = 'Latitude: ' + state.location.lat;
-                    lng.innerText = 'Longitude: ' + state.location.lng;
-                    weatherList.classList.remove('transparent');
+                    if (state.weather.main !== void 0) {
+                        temp.innerHTML = Math.round(state.weather.main.temp) + ' \xB0C';
+                        pressure.innerHTML = Math.round(state.weather.main.pressure) + ' mbar';
+                        humidity.innerHTML = state.weather.main.humidity + ' %';
+                    }
+                    lat.innerHTML = state.location.lat.toFixed(3);
+                    lng.innerHTML = state.location.lng.toFixed(3);
+                    updatables.forEach(function (item) {
+                        item.classList.remove('transparent');
+                    });
+                    break;
+                case 'address':
+                    address.innerHTML = state.address;
                     break;
                 default:
                     break;
@@ -361,23 +419,49 @@ var App = function () {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 });
+            }, function () {
+                cb({
+                    lat: 0,
+                    lng: 0
+                });
             });
         }
     }, {
-        key: 'getWeather',
-        value: function getWeather(location) {
+        key: 'getAddress',
+        value: function getAddress(location) {
             var _this3 = this;
 
-            var url = 'https://fcc-weather-api.glitch.me/api/current?';
+            var url = 'https://maps.googleapis.com/maps/api/geocode/json';
             _ajax2.default.get(url, {
-                lat: location.lat,
-                lon: location.lng
+                latlng: location.lat + ',' + location.lng,
+                key: 'AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78'
             }).then(function (data) {
                 if (data.error) {
                     _this3.store.dispatch(_this3.actions.error());
                     return;
                 }
-                _this3.store.dispatch(_this3.actions.weather(data));
+                if (Array.isArray(data.results) && data.results[0] !== void 0 && data.results[0].formatted_address !== void 0) {
+                    _this3.store.dispatch(_this3.actions.address(data.results[0].formatted_address));
+                } else {
+                    _this3.store.dispatch(_this3.actions.address('unknown'));
+                }
+            });
+        }
+    }, {
+        key: 'getWeather',
+        value: function getWeather(location) {
+            var _this4 = this;
+
+            var url = 'https://fcc-weather-api.glitch.me/api/current';
+            _ajax2.default.get(url, {
+                lat: location.lat,
+                lon: location.lng
+            }).then(function (data) {
+                if (data.error) {
+                    _this4.store.dispatch(_this4.actions.error());
+                    return;
+                }
+                _this4.store.dispatch(_this4.actions.weather(data));
             });
         }
     }]);
@@ -399,8 +483,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 /**
  * ajax.js
- * Created by Andrii Sorokin on 08/19/17
- * https://github.com/ignorantic/quotes.git
+ * Created by Andrii Sorokin on 08/20/17
+ * https://github.com/ignorantic/weather.git
  */
 
 var ajax = {};
@@ -428,6 +512,8 @@ ajax.get = function (url, parameters) {
         if (Object.prototype.hasOwnProperty.call(parameters, key)) {
             if (paramString !== '') {
                 paramString += '&';
+            } else {
+                paramString = '?';
             }
             paramString += key + '=' + parameters[key];
         }
@@ -446,6 +532,131 @@ ajax.post = function (url, headers, body) {
 };
 
 exports.default = ajax;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+/**
+ * html-helper.js
+ * Created by Andrii Sorokin on 08/21/17
+ * https://github.com/ignorantic/weather.git
+ */
+
+var html = {};
+
+/**
+ * Create and return DOM element
+ *
+ * @param  {String}         htmlTag         HTML tag
+ * @param  {String}         innerHTML       HTML text
+ *         {Object}         DOM element
+ *         {Array}          array of DOM elements
+ * @param  {Object}         attrs
+ * @param  {Object}         style
+ * @return {Object}         DOM element
+ */
+html.tag = function (htmlTag, innerHTML, attrs, style) {
+
+    var element = void 0;
+
+    function addAttrs() {
+        for (var key in attrs) {
+            if (!Object.prototype.hasOwnProperty.call(attrs, key)) {
+                continue;
+            }
+            var valueStr = void 0;
+            if (Array.isArray(attrs[key])) {
+                valueStr = attrs[key].join(' ');
+            } else {
+                valueStr = attrs[key];
+            }
+            element.setAttribute(key, valueStr);
+        }
+    }
+
+    function addChildren() {
+        if (typeof innerHTML === 'string') {
+            element.innerHTML = innerHTML;
+            return;
+        }
+        if (innerHTML instanceof HTMLElement) {
+            element.appendChild(innerHTML);
+            return;
+        }
+        if (Array.isArray(innerHTML)) {
+            innerHTML.forEach(function (value) {
+                if (value instanceof HTMLElement) {
+                    element.appendChild(value);
+                }
+            });
+        }
+    }
+
+    function addStyles() {
+        var key = void 0;
+        for (key in style) {
+            if (!Object.prototype.hasOwnProperty.call(style, key)) {
+                continue;
+            }
+            if (typeof style[key] === 'string') {
+                element.style[key] = style[key];
+            }
+        }
+    }
+
+    /* BEGIN */
+
+    if (typeof htmlTag === 'string') {
+        element = document.createElement(htmlTag);
+    } else {
+        element = document.createElement('div');
+    }
+
+    if ((typeof attrs === 'undefined' ? 'undefined' : _typeof(attrs)) === 'object') {
+        addAttrs();
+    }
+
+    if (innerHTML) {
+        addChildren();
+    }
+
+    if ((typeof style === 'undefined' ? 'undefined' : _typeof(style)) === 'object') {
+        addStyles();
+    }
+
+    return element;
+};
+
+/**
+ * Create and return DOM element of link
+ *
+ * @param  {String}         innerHTML       HTML text
+ *         {Object}         DOM element
+ *         {Array}          array of DOM elements
+ * @param  {String}         url             Web address
+ * @param  {Object}         attrs
+ * @param  {Object}         style
+ * @return {Object}         DOM element     Link element
+ */
+html.a = function (innerHTML, url, attrs, style) {
+    var element = html.tag('a', innerHTML, attrs, style);
+    if (typeof url === 'string') {
+        element.setAttribute('href', url);
+    }
+    return element;
+};
+
+exports.default = html;
 
 /***/ })
 /******/ ]);
