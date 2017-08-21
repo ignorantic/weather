@@ -2,10 +2,10 @@
  * app.js
  * Created by Andrii Sorokin on 08/20/17
  * https://github.com/ignorantic/weather.git
- * AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78
  */
 
 import ajax from './ajax'
+import html from './html-helper'
 
 export default class App {
 
@@ -17,6 +17,7 @@ export default class App {
         // Create initial state
         this.initialState = {
             location: {},
+            address: '',
             weather: {},
             status: 'ready'
         };
@@ -36,6 +37,12 @@ export default class App {
             location: function (data) {
                 return {
                     type: 'location',
+                    data: data
+                };
+            },
+            address: function (data) {
+                return {
+                    type: 'address',
                     data: data
                 };
             },
@@ -60,13 +67,6 @@ export default class App {
         this.store.subscribe(() => {
             let state = this.store.getState();
             this.filter(state);
-        });
-
-        // Initial request
-        this.store.dispatch(this.actions.wait());
-        this.getLocation((position) => {
-            this.store.dispatch(this.actions.location(position));
-            this.getWeather(position);
         });
     }
 
@@ -143,6 +143,11 @@ export default class App {
                     location: action.data,
                     status: 'location'
                 });
+            case 'address':
+                return Object.assign({}, state, {
+                    address: action.data,
+                    status: 'address'
+                });
             case 'weather':
                 return Object.assign({}, state, {
                     weather: action.data,
@@ -158,6 +163,7 @@ export default class App {
             case 'location':
                 this.store.dispatch(this.actions.wait());
                 this.getWeather(state.location);
+                this.getAddress(state.location);
                 break;
             default:
                 this.render(state);
@@ -170,27 +176,54 @@ export default class App {
      * @param state
      */
     render(state) {
-        const weatherList = document.querySelector('.weather__list');
-        const temp = document.querySelector('#temp');
-        const pressure = document.querySelector('#pressure');
-        const humidity = document.querySelector('#humidity');
-        const lat = document.querySelector('#lat');
-        const lng = document.querySelector('#lng');
+
+        const toArray = function(list) {
+            if (!list) {
+                return null;
+            }
+            return Array.prototype.slice.call(list);
+        };
+
+        const updatables = toArray(document.querySelectorAll('.updatable'));
+        const icon = document.querySelector('#icon');
+        const address = document.querySelector('#address');
         switch (state.status) {
             case 'waiting':
-                weatherList.classList.add('transparent');
+                updatables.forEach((item) => {
+                    item.classList.add('transparent');
+                });
                 break;
             case 'error':
                 break;
             case 'ready':
-                if (state.weather.main !== void 0) {
-                    temp.innerText = `Temperature: ${state.weather.main.temp}`;
-                    pressure.innerText = `Pressure: ${state.weather.main.pressure}`;
-                    humidity.innerText = `Humidity: ${state.weather.main.humidity}`;
+                const temp = document.querySelector('#temp');
+                const pressure = document.querySelector('#pressure');
+                const humidity = document.querySelector('#humidity');
+                const lat = document.querySelector('#lat');
+                const lng = document.querySelector('#lng');
+                icon.innerHTML = '';
+                if (Array.isArray(state.weather.weather)
+                    && state.weather.weather[0].icon !== void 0) {
+                    let iconURL = state.weather.weather[0].icon.split('?')[0];
+                    icon.innerHTML = '';
+                    icon.appendChild(html.tag('img', null, {
+                        src: iconURL,
+                        alt: state.weather.weather[0].description
+                    }, null));
                 }
-                lat.innerText = `Latitude: ${state.location.lat}`;
-                lng.innerText = `Longitude: ${state.location.lng}`;
-                weatherList.classList.remove('transparent');
+                if (state.weather.main !== void 0) {
+                    temp.innerHTML = `${Math.round(state.weather.main.temp)} °C`;
+                    pressure.innerHTML = `${Math.round(state.weather.main.pressure)} mbar`;
+                    humidity.innerHTML = `${state.weather.main.humidity} %`;
+                }
+                lat.innerHTML = state.location.lat.toFixed(3);
+                lng.innerHTML = state.location.lng.toFixed(3);
+                updatables.forEach((item) => {
+                    item.classList.remove('transparent');
+                });
+                break;
+            case 'address':
+                address.innerHTML = state.address;
                 break;
             default:
                 break;
@@ -199,16 +232,44 @@ export default class App {
     }
 
     getLocation(cb) {
-        navigator.geolocation.getCurrentPosition((position) => {
-            cb({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            })
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                cb({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                })
+            },
+
+            () => {
+                cb({
+                    lat: 0,
+                    lng: 0
+                })
+            });
+    }
+
+    getAddress(location) {
+        let url = `https://maps.googleapis.com/maps/api/geocode/json`;
+        ajax.get(url, {
+            latlng: `${location.lat},${location.lng}`,
+            key: 'AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78'
+        }).then(data => {
+            if (data.error) {
+                this.store.dispatch(this.actions.error());
+                return;
+            }
+            if (Array.isArray(data.results) && data.results[0] !== void 0
+                && data.results[0].formatted_address !== void 0) {
+                this.store.dispatch(this.actions.address(data.results[0].formatted_address));
+            } else {
+                this.store.dispatch(this.actions.address('unknown'));
+            }
         });
+
     }
 
     getWeather(location) {
-        let url = `https://fcc-weather-api.glitch.me/api/current?`;
+        let url = `https://fcc-weather-api.glitch.me/api/current`;
         ajax.get(url, {
             lat: location.lat,
             lon: location.lng

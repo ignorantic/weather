@@ -1,7 +1,7 @@
 /**
  * ajax.js
- * Created by Andrii Sorokin on 08/19/17
- * https://github.com/ignorantic/quotes.git
+ * Created by Andrii Sorokin on 08/20/17
+ * https://github.com/ignorantic/weather.git
  */
 
 let ajax = {};
@@ -29,6 +29,8 @@ ajax.get = function(url, parameters) {
         if (Object.prototype.hasOwnProperty.call(parameters, key)) {
             if (paramString !== '') {
                 paramString += '&';
+            } else {
+                paramString = '?';
             }
             paramString += `${key}=${parameters[key]}`;
         }
