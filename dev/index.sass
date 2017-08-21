@@ -1,0 +1,48 @@
+@import 'sass/normalize'
+@import 'sass/sprite'
+
+$face: #fff
+$back: #008a97
+
+body
+  background: $back
+
+.btn
+  border-radius: 3px
+  border: 0
+  outline: none
+  background: $back
+  color: $face
+  transition: opacity 0.2s
+
+  &:hover
+    opacity: 0.9
+
+.text
+  color: $back
+  margin: 0
+
+.weather
+  position: fixed
+  left: 10px
+  top: 50px
+  padding: 10px
+  border-radius: 2px
+  background: $face
+  z-index: 10
+
+.weather__list
+  opacity: 1
+  transition: opacity 0.4s
+
+.transparent
+  opacity: 0
+
+.icon
+  display: inline-block
+
+.icon-twitter
+  @include sprite($twitter)
+
+.icon-tumblr
+  @include sprite($tumblr)
