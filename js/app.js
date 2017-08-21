@@ -83,6 +83,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function initMap() {
 
+        var map = void 0,
+            marker = void 0;
+
+        function getLocation(cb) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                cb({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                });
+            }, function () {
+                cb({
+                    lat: 0,
+                    lng: 0
+                });
+            });
+        }
+
         function initMarker(position) {
             marker = new google.maps.Marker({
                 position: {
@@ -92,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 map: map,
                 draggable: true
             });
+
             map.setCenter(marker.getPosition());
             marker.addListener('dragend', function () {
                 app.store.dispatch(app.actions.location({
@@ -99,11 +117,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     lng: marker.getPosition().lng()
                 }));
             });
+
             app.store.dispatch(app.actions.location(position));
             app.getWeather(position);
         }
 
-        var map = new google.maps.Map(document.getElementById('map'), {
+        map = new google.maps.Map(document.getElementById('map'), {
             zoom: 4,
             center: {
                 lat: 0,
@@ -117,10 +136,8 @@ document.addEventListener('DOMContentLoaded', function () {
             fullscreenControl: false
         });
 
-        var marker = void 0;
-
         app.store.dispatch(app.actions.wait());
-        app.getLocation(initMarker);
+        getLocation(initMarker);
 
         map.addListener('click', function (e) {
             marker.setPosition(e.latLng);
@@ -235,41 +252,6 @@ var App = function () {
         }
 
         /**
-         * Register event handlers
-         * @param {array} array
-         */
-
-    }, {
-        key: 'on',
-        value: function on(array) {
-            var _this2 = this;
-
-            array.forEach(function (item) {
-                if (typeof item.event === 'string') {
-                    _this2.addListener(item.event, item.selector, item.action);
-                }
-            });
-        }
-
-        /**
-         * Add event listener
-         * @param {string} event
-         * @param {string} selector
-         * @param {function} action
-         */
-
-    }, {
-        key: 'addListener',
-        value: function addListener(event, selector, action) {
-            if (typeof selector === 'string') {
-                var elements = document.querySelectorAll(selector);
-                elements.forEach(function (element) {
-                    return element.addEventListener(event, action, false);
-                });
-            }
-        }
-
-        /**
          * Create store of component
          * @param {function} reducer
          * @param {object} initialState
@@ -341,8 +323,8 @@ var App = function () {
             switch (state.status) {
                 case 'location':
                     this.store.dispatch(this.actions.wait());
-                    this.getWeather(state.location);
                     this.getAddress(state.location);
+                    this.getWeather(state.location);
                     break;
                 default:
                     this.render(state);
@@ -358,27 +340,19 @@ var App = function () {
     }, {
         key: 'render',
         value: function render(state) {
-
-            var toArray = function toArray(list) {
-                if (!list) {
-                    return null;
-                }
-                return Array.prototype.slice.call(list);
-            };
-
-            var updatables = toArray(document.querySelectorAll('.updatable'));
+            console.log(state);
+            var updatables = document.querySelector('.updatable');
             var icon = document.querySelector('#icon');
             var address = document.querySelector('#address');
             switch (state.status) {
                 case 'waiting':
-                    updatables.forEach(function (item) {
-                        item.classList.add('transparent');
-                    });
+                    updatables.classList.add('transparent');
                     break;
                 case 'error':
                     break;
                 case 'ready':
                     var temp = document.querySelector('#temp');
+                    var sky = document.querySelector('#sky');
                     var pressure = document.querySelector('#pressure');
                     var humidity = document.querySelector('#humidity');
                     var lat = document.querySelector('#lat');
@@ -391,6 +365,7 @@ var App = function () {
                             src: iconURL,
                             alt: state.weather.weather[0].description
                         }, null));
+                        sky.innerHTML = state.weather.weather[0].main;
                     }
                     if (state.weather.main !== void 0) {
                         temp.innerHTML = Math.round(state.weather.main.temp) + ' \xB0C';
@@ -399,9 +374,7 @@ var App = function () {
                     }
                     lat.innerHTML = state.location.lat.toFixed(3);
                     lng.innerHTML = state.location.lng.toFixed(3);
-                    updatables.forEach(function (item) {
-                        item.classList.remove('transparent');
-                    });
+                    updatables.classList.remove('transparent');
                     break;
                 case 'address':
                     address.innerHTML = state.address;
@@ -412,24 +385,9 @@ var App = function () {
             }
         }
     }, {
-        key: 'getLocation',
-        value: function getLocation(cb) {
-            navigator.geolocation.getCurrentPosition(function (position) {
-                cb({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                });
-            }, function () {
-                cb({
-                    lat: 0,
-                    lng: 0
-                });
-            });
-        }
-    }, {
         key: 'getAddress',
         value: function getAddress(location) {
-            var _this3 = this;
+            var _this2 = this;
 
             var url = 'https://maps.googleapis.com/maps/api/geocode/json';
             _ajax2.default.get(url, {
@@ -437,20 +395,20 @@ var App = function () {
                 key: 'AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78'
             }).then(function (data) {
                 if (data.error) {
-                    _this3.store.dispatch(_this3.actions.error());
+                    _this2.store.dispatch(_this2.actions.error());
                     return;
                 }
                 if (Array.isArray(data.results) && data.results[0] !== void 0 && data.results[0].formatted_address !== void 0) {
-                    _this3.store.dispatch(_this3.actions.address(data.results[0].formatted_address));
+                    _this2.store.dispatch(_this2.actions.address(data.results[0].formatted_address));
                 } else {
-                    _this3.store.dispatch(_this3.actions.address('unknown'));
+                    _this2.store.dispatch(_this2.actions.address('unknown'));
                 }
             });
         }
     }, {
         key: 'getWeather',
         value: function getWeather(location) {
-            var _this4 = this;
+            var _this3 = this;
 
             var url = 'https://fcc-weather-api.glitch.me/api/current';
             _ajax2.default.get(url, {
@@ -458,10 +416,10 @@ var App = function () {
                 lon: location.lng
             }).then(function (data) {
                 if (data.error) {
-                    _this4.store.dispatch(_this4.actions.error());
+                    _this3.store.dispatch(_this3.actions.error());
                     return;
                 }
-                _this4.store.dispatch(_this4.actions.weather(data));
+                _this3.store.dispatch(_this3.actions.weather(data));
             });
         }
     }]);

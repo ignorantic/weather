@@ -11,20 +11,26 @@
     <div class="container">
       <div class="row">
         <div class="weather">
-          <div class="weather__icon updatable" id="icon"></div>
-          <div class="weather__list">
-            <p class="text text_title">Temperature:</p>
-            <p class="text updatable" id="temp"></p>
-            <p class="text text_title">Pressure:</p>
-            <p class="text updatable" id="pressure"></p>
-            <p class="text text_title">Humidity:</p>
-            <p class="text updatable" id="humidity"></p>
-            <p class="text text_title">Latitude:</p>
-            <p class="text updatable" id="lat"></p>
-            <p class="text text_title">Longitude:</p>
-            <p class="text updatable" id="lng"></p>
-            <p class="text text_title">Address:</p>
-            <p class="text updatable" id="address"></p>
+          <div class="updatable">
+            <div class="weather__head">
+              <div class="weather__icon" id="icon"></div>
+              <div class="weather__main">
+                <p class="weather__temp text" id="temp"></p>
+                <p class="weather__sky text" id="sky"></p>
+              </div>
+            </div>
+            <div class="weather__list">
+              <p class="text text_title">Pressure:</p>
+              <p class="text" id="pressure"></p>
+              <p class="text text_title">Humidity:</p>
+              <p class="text" id="humidity"></p>
+              <p class="text text_title">Latitude:</p>
+              <p class="text" id="lat"></p>
+              <p class="text text_title">Longitude:</p>
+              <p class="text" id="lng"></p>
+              <p class="text text_title">Address:</p>
+              <p class="text" id="address"></p>
+            </div>
           </div>
         </div>
       </div>
