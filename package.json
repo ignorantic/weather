@@ -12,7 +12,7 @@
     "eslint": "eslint dev dev/js || true",
     "webpack": "webpack",
     "uglify": "uglifyjs build/js/app.js -m -o build/js/app.min.js",
-    "img": "copyfiles -f dev/*.ico build",
+    "img": "copyfiles -f dev/*.ico build && copyfiles -f dev/*.png build",
     "clean": "rimraf build",
     "build-css": "npm run sass-lint && npm run node-sass",
     "build-html": "npm run pug-lint && npm run pug",

@@ -5,7 +5,6 @@
  */
 
 import ajax from './ajax';
-import html from './html-helper';
 
 export default class App {
   /**
@@ -150,46 +149,54 @@ export default class App {
    * @param state
    */
   static render(state) {
+    let items = {};
     const updatables = document.querySelector('.updatable');
     const icon = document.querySelector('#icon');
     const address = document.querySelector('#address');
-    const temp = document.querySelector('#temp');
-    const pressure = document.querySelector('#pressure');
-    const humidity = document.querySelector('#humidity');
-    const lat = document.querySelector('#lat');
-    const lng = document.querySelector('#lng');
-    const sky = document.querySelector('#sky');
-    let iconURL;
     switch (state.status) {
       case 'waiting':
         updatables.classList.add('transparent');
         break;
       case 'ready':
-        icon.innerHTML = '';
+        if (state.weather.main !== undefined) {
+          items = {
+            '#temp': `${Math.round(state.weather.main.temp)} °C`,
+            '#pressure': `${Math.round(state.weather.main.pressure)} mbar`,
+            '#humidity': `${state.weather.main.humidity} %`,
+          };
+        }
+        items['#lat'] = state.location.lat.toFixed(3);
+        items['#lng'] = state.location.lng.toFixed(3);
         if (Array.isArray(state.weather.weather)
           && state.weather.weather[0].icon !== undefined) {
-          iconURL = state.weather.weather[0].icon.split('?')[0];
-          icon.innerHTML = '';
-          icon.appendChild(html.tag('img', null, {
-            src: iconURL,
-            alt: state.weather.weather[0].description,
-          }, null));
-          sky.innerHTML = state.weather.weather[0].main;
+          items['#sky'] = state.weather.weather[0].main;
+          icon.setAttribute('src', state.weather.weather[0].icon.split('?')[0]);
+          icon.setAttribute('alt', state.weather.weather[0].description);
         }
-        if (state.weather.main !== undefined) {
-          temp.innerHTML = `${Math.round(state.weather.main.temp)} °C`;
-          pressure.innerHTML = `${Math.round(state.weather.main.pressure)} mbar`;
-          humidity.innerHTML = `${state.weather.main.humidity} %`;
-        }
-        lat.innerHTML = state.location.lat.toFixed(3);
-        lng.innerHTML = state.location.lng.toFixed(3);
+        Object.keys(items).forEach((key) => {
+          document.querySelector(key).innerHTML = items[key];
+        });
         updatables.classList.remove('transparent');
         break;
       case 'address':
         address.innerHTML = state.address;
         break;
       case 'error':
-        // Nothing yet
+        items = {
+          '#temp': 'n/a',
+          '#pressure': 'n/a',
+          '#humidity': 'n/a',
+          '#lat': 'n/a',
+          '#lng': 'n/a',
+          '#sky': 'n/a',
+          '#address': 'n/a',
+        };
+        icon.setAttribute('src', 'error.png');
+        icon.setAttribute('alt', 'error');
+        Object.keys(items).forEach((key) => {
+          document.querySelector(key).innerHTML = items[key];
+        });
+        updatables.classList.remove('transparent');
         break;
       default:
         break;
