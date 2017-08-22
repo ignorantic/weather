@@ -173,10 +173,6 @@ var _ajax = __webpack_require__(2);
 
 var _ajax2 = _interopRequireDefault(_ajax);
 
-var _htmlHelper = __webpack_require__(3);
-
-var _htmlHelper2 = _interopRequireDefault(_htmlHelper);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -393,45 +389,53 @@ var App = function () {
   }, {
     key: 'render',
     value: function render(state) {
+      var items = {};
       var updatables = document.querySelector('.updatable');
       var icon = document.querySelector('#icon');
       var address = document.querySelector('#address');
-      var temp = document.querySelector('#temp');
-      var pressure = document.querySelector('#pressure');
-      var humidity = document.querySelector('#humidity');
-      var lat = document.querySelector('#lat');
-      var lng = document.querySelector('#lng');
-      var sky = document.querySelector('#sky');
-      var iconURL = void 0;
       switch (state.status) {
         case 'waiting':
           updatables.classList.add('transparent');
           break;
         case 'ready':
-          icon.innerHTML = '';
-          if (Array.isArray(state.weather.weather) && state.weather.weather[0].icon !== undefined) {
-            iconURL = state.weather.weather[0].icon.split('?')[0];
-            icon.innerHTML = '';
-            icon.appendChild(_htmlHelper2.default.tag('img', null, {
-              src: iconURL,
-              alt: state.weather.weather[0].description
-            }, null));
-            sky.innerHTML = state.weather.weather[0].main;
-          }
           if (state.weather.main !== undefined) {
-            temp.innerHTML = Math.round(state.weather.main.temp) + ' \xB0C';
-            pressure.innerHTML = Math.round(state.weather.main.pressure) + ' mbar';
-            humidity.innerHTML = state.weather.main.humidity + ' %';
+            items = {
+              '#temp': Math.round(state.weather.main.temp) + ' \xB0C',
+              '#pressure': Math.round(state.weather.main.pressure) + ' mbar',
+              '#humidity': state.weather.main.humidity + ' %'
+            };
           }
-          lat.innerHTML = state.location.lat.toFixed(3);
-          lng.innerHTML = state.location.lng.toFixed(3);
+          items['#lat'] = state.location.lat.toFixed(3);
+          items['#lng'] = state.location.lng.toFixed(3);
+          if (Array.isArray(state.weather.weather) && state.weather.weather[0].icon !== undefined) {
+            items['#sky'] = state.weather.weather[0].main;
+            icon.setAttribute('src', state.weather.weather[0].icon.split('?')[0]);
+            icon.setAttribute('alt', state.weather.weather[0].description);
+          }
+          Object.keys(items).forEach(function (key) {
+            document.querySelector(key).innerHTML = items[key];
+          });
           updatables.classList.remove('transparent');
           break;
         case 'address':
           address.innerHTML = state.address;
           break;
         case 'error':
-          // Nothing yet
+          items = {
+            '#temp': 'n/a',
+            '#pressure': 'n/a',
+            '#humidity': 'n/a',
+            '#lat': 'n/a',
+            '#lng': 'n/a',
+            '#sky': 'n/a',
+            '#address': 'n/a'
+          };
+          icon.setAttribute('src', 'error.png');
+          icon.setAttribute('alt', 'error');
+          Object.keys(items).forEach(function (key) {
+            document.querySelector(key).innerHTML = items[key];
+          });
+          updatables.classList.remove('transparent');
           break;
         default:
           break;
@@ -501,126 +505,6 @@ ajax.post = function (url, headers, body) {
 };
 
 exports.default = ajax;
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-/**
- * html-helper.js
- * Created by Andrii Sorokin on 08/21/17
- * https://github.com/ignorantic/weather.git
- */
-
-var html = {};
-
-/**
- * Create and return DOM element
- *
- * @param  {String}         htmlTag         HTML tag
- * @param  {String}         innerHTML       HTML text
- *         {Object}         DOM element
- *         {Array}          array of DOM elements
- * @param  {Object}         attrs
- * @param  {Object}         style
- * @return {Object}         DOM element
- */
-html.tag = function (htmlTag, innerHTML, attrs, style) {
-  var element = void 0;
-  function addAttrs() {
-    if (attrs) {
-      Object.keys(attrs).forEach(function (item) {
-        var valueStr = void 0;
-        if (Array.isArray(attrs[item])) {
-          valueStr = attrs[item].join(' ');
-        } else {
-          valueStr = attrs[item];
-        }
-        element.setAttribute(item, valueStr);
-      });
-    }
-  }
-
-  function addChildren() {
-    if (typeof innerHTML === 'string') {
-      element.innerHTML = innerHTML;
-      return;
-    }
-    if (innerHTML instanceof HTMLElement) {
-      element.appendChild(innerHTML);
-      return;
-    }
-    if (Array.isArray(innerHTML)) {
-      innerHTML.forEach(function (value) {
-        if (value instanceof HTMLElement) {
-          element.appendChild(value);
-        }
-      });
-    }
-  }
-
-  function addStyles() {
-    if (style) {
-      Object.keys(style).forEach(function (item) {
-        if (typeof style[item] === 'string') {
-          element.style[item] = style[item];
-        }
-      });
-    }
-  }
-
-  /* BEGIN */
-
-  if (typeof htmlTag === 'string') {
-    element = document.createElement(htmlTag);
-  } else {
-    element = document.createElement('div');
-  }
-
-  if ((typeof attrs === 'undefined' ? 'undefined' : _typeof(attrs)) === 'object') {
-    addAttrs();
-  }
-
-  if (innerHTML) {
-    addChildren();
-  }
-
-  if ((typeof style === 'undefined' ? 'undefined' : _typeof(style)) === 'object') {
-    addStyles();
-  }
-
-  return element;
-};
-
-/**
- * Create and return DOM element of link
- *
- * @param  {String}         innerHTML       HTML text
- *         {Object}         DOM element
- *         {Array}          array of DOM elements
- * @param  {String}         url             Web address
- * @param  {Object}         attrs
- * @param  {Object}         style
- * @return {Object}         DOM element     Link element
- */
-html.a = function (innerHTML, url, attrs, style) {
-  var element = html.tag('a', innerHTML, attrs, style);
-  if (typeof url === 'string') {
-    element.setAttribute('href', url);
-  }
-  return element;
-};
-
-exports.default = html;
 
 /***/ })
 /******/ ]);
