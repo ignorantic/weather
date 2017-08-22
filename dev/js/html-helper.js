@@ -4,7 +4,7 @@
  * https://github.com/ignorantic/weather.git
  */
 
-let html = {};
+const html = {};
 
 /**
  * Create and return DOM element
@@ -17,76 +17,71 @@ let html = {};
  * @param  {Object}         style
  * @return {Object}         DOM element
  */
-html.tag = function (htmlTag, innerHTML, attrs, style) {
-
-    let element;
-
-    function addAttrs () {
-        for (let key in attrs) {
-            if (!Object.prototype.hasOwnProperty.call(attrs, key)) {
-                continue;
-            }
-            let valueStr;
-            if (Array.isArray(attrs[key])) {
-                valueStr = attrs[key].join(' ');
-            } else {
-                valueStr = attrs[key];
-            }
-            element.setAttribute(key, valueStr);
+html.tag = (htmlTag, innerHTML, attrs, style) => {
+  let element;
+  function addAttrs() {
+    if (attrs) {
+      Object.keys(attrs).forEach((item) => {
+        let valueStr;
+        if (Array.isArray(attrs[item])) {
+          valueStr = attrs[item].join(' ');
+        } else {
+          valueStr = attrs[item];
         }
+        element.setAttribute(item, valueStr);
+      });
     }
+  }
 
-    function addChildren () {
-        if (typeof innerHTML === 'string') {
-            element.innerHTML = innerHTML;
-            return;
+  function addChildren() {
+    if (typeof innerHTML === 'string') {
+      element.innerHTML = innerHTML;
+      return;
+    }
+    if (innerHTML instanceof HTMLElement) {
+      element.appendChild(innerHTML);
+      return;
+    }
+    if (Array.isArray(innerHTML)) {
+      innerHTML.forEach((value) => {
+        if (value instanceof HTMLElement) {
+          element.appendChild(value);
         }
-        if (innerHTML instanceof HTMLElement) {
-            element.appendChild(innerHTML);
-            return;
+      });
+    }
+  }
+
+  function addStyles() {
+    if (style) {
+      Object.keys(style).forEach((item) => {
+        if (typeof style[item] === 'string') {
+          element.style[item] = style[item];
         }
-        if (Array.isArray(innerHTML)) {
-            innerHTML.forEach(value => {
-                if (value instanceof HTMLElement) {
-                    element.appendChild(value);
-                }
-            });
-        }
+      });
     }
+  }
 
-    function addStyles () {
-        let key;
-        for (key in style) {
-            if (!Object.prototype.hasOwnProperty.call(style, key)) {
-                continue;
-            }
-            if (typeof style[key] === 'string') {
-                element.style[key] = style[key];
-            }
-        }
-    }
+  /* BEGIN */
 
-    /* BEGIN */
+  if (typeof htmlTag === 'string') {
+    element = document.createElement(htmlTag);
+  } else {
+    element = document.createElement('div');
+  }
 
-    if (typeof htmlTag === 'string') {
-        element = document.createElement(htmlTag);
-    } else {
-        element = document.createElement('div');
-    }
+  if (typeof attrs === 'object') {
+    addAttrs();
+  }
 
-    if (typeof attrs === 'object') {
-        addAttrs();
-    }
+  if (innerHTML) {
+    addChildren();
+  }
 
-    if (innerHTML) {
-        addChildren();
-    }
+  if (typeof style === 'object') {
+    addStyles();
+  }
 
-    if (typeof style === 'object') {
-        addStyles();
-    }
-
-    return element;
+  return element;
 };
 
 /**
@@ -100,12 +95,12 @@ html.tag = function (htmlTag, innerHTML, attrs, style) {
  * @param  {Object}         style
  * @return {Object}         DOM element     Link element
  */
-html.a = function (innerHTML, url, attrs, style) {
-    let element = html.tag('a', innerHTML, attrs, style);
-    if (typeof url === 'string') {
-        element.setAttribute('href', url);
-    }
-    return element;
+html.a = (innerHTML, url, attrs, style) => {
+  const element = html.tag('a', innerHTML, attrs, style);
+  if (typeof url === 'string') {
+    element.setAttribute('href', url);
+  }
+  return element;
 };
 
 export default html;

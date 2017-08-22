@@ -77,77 +77,75 @@ var _app2 = _interopRequireDefault(_app);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 document.addEventListener('DOMContentLoaded', function () {
+  // Create and initialize application object
+  var app = new _app2.default();
+  app.init();
 
-    var app = new _app2.default();
-    app.init();
+  // Initialize map, callback for Google Maps JavaScript API
+  function initMap() {
+    var map = void 0;
+    var marker = void 0;
 
-    function initMap() {
+    // Initialize marker
+    function initMarker(position) {
+      marker = new window.google.maps.Marker({
+        position: {
+          lat: position.lat,
+          lng: position.lng
+        },
+        map: map,
+        draggable: true
+      });
 
-        var map = void 0,
-            marker = void 0;
+      map.setCenter(marker.getPosition());
+      marker.addListener('dragend', function () {
+        app.store.dispatch(app.actions.location({
+          lat: marker.getPosition().lat(),
+          lng: marker.getPosition().lng()
+        }));
+      });
 
-        function getLocation(cb) {
-            navigator.geolocation.getCurrentPosition(function (position) {
-                cb({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                });
-            }, function () {
-                cb({
-                    lat: 0,
-                    lng: 0
-                });
-            });
-        }
-
-        function initMarker(position) {
-            marker = new google.maps.Marker({
-                position: {
-                    lat: position.lat,
-                    lng: position.lng
-                },
-                map: map,
-                draggable: true
-            });
-
-            map.setCenter(marker.getPosition());
-            marker.addListener('dragend', function () {
-                app.store.dispatch(app.actions.location({
-                    lat: marker.getPosition().lat(),
-                    lng: marker.getPosition().lng()
-                }));
-            });
-
-            app.store.dispatch(app.actions.location(position));
-            app.getWeather(position);
-        }
-
-        map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 4,
-            center: {
-                lat: 0,
-                lng: 0
-            },
-            mapTypeControlOptions: {
-                style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-                position: google.maps.ControlPosition.TOP_RIGHT
-            },
-            streetViewControl: false,
-            fullscreenControl: false
-        });
-
-        app.store.dispatch(app.actions.wait());
-        getLocation(initMarker);
-
-        map.addListener('click', function (e) {
-            marker.setPosition(e.latLng);
-            app.store.dispatch(app.actions.location({
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng()
-            }));
-        });
+      app.store.dispatch(app.actions.location(position));
+      app.getWeather(position);
     }
-    window.initMap = initMap;
+
+    map = new window.google.maps.Map(document.getElementById('map'), {
+      zoom: 4,
+      center: {
+        lat: 0,
+        lng: 0
+      },
+      mapTypeControlOptions: {
+        style: window.google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: window.google.maps.ControlPosition.TOP_RIGHT
+      },
+      streetViewControl: false,
+      fullscreenControl: false
+    });
+
+    app.store.dispatch(app.actions.wait());
+    navigator.geolocation.getCurrentPosition(function (position) {
+      initMarker({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      });
+    }, function () {
+      initMarker({
+        lat: 0,
+        lng: 0
+      });
+    });
+
+    map.addListener('click', function (e) {
+      marker.setPosition(e.latLng);
+      app.store.dispatch(app.actions.location({
+        lat: e.latLng.lat(),
+        lng: e.latLng.lng()
+      }));
+    });
+  }
+
+  window.initMap = initMap;
 }); /**
      * index.js
      * Created by Andrii Sorokin on 08/20/17
@@ -162,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
@@ -184,247 +182,264 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var App = function () {
+  /**
+   * Construct the application object
+   */
+  function App() {
+    _classCallCheck(this, App);
 
-    /**
-     * Construct the application object
-     */
-    function App() {
-        _classCallCheck(this, App);
+    // Create initial state
+    this.initialState = {
+      location: {},
+      address: '',
+      weather: {},
+      status: 'ready'
+    };
 
-        // Create initial state
-        this.initialState = {
-            location: {},
-            address: '',
-            weather: {},
-            status: 'ready'
+    // Create action generators
+    this.actions = {
+      wait: function wait() {
+        return {
+          type: 'wait'
         };
-
-        // Create action generators
-        this.actions = {
-            wait: function wait() {
-                return {
-                    type: 'wait'
-                };
-            },
-            error: function error() {
-                return {
-                    type: 'error'
-                };
-            },
-            location: function location(data) {
-                return {
-                    type: 'location',
-                    data: data
-                };
-            },
-            address: function address(data) {
-                return {
-                    type: 'address',
-                    data: data
-                };
-            },
-            weather: function weather(data) {
-                return {
-                    type: 'weather',
-                    data: data
-                };
-            }
+      },
+      error: function error() {
+        return {
+          type: 'error'
         };
+      },
+      location: function location(data) {
+        return {
+          type: 'location',
+          data: data
+        };
+      },
+      address: function address(data) {
+        return {
+          type: 'address',
+          data: data
+        };
+      },
+      weather: function weather(data) {
+        return {
+          type: 'weather',
+          data: data
+        };
+      }
+    };
+  }
 
-        // Create store with initial state
-        this.store = this.createStore(this.reducer, this.initialState);
+  /**
+   * Initializing the application object
+   */
+
+
+  _createClass(App, [{
+    key: 'init',
+    value: function init() {
+      var _this = this;
+
+      // Create store with initial state
+      this.store = App.createStore(App.reducer, this.initialState);
+
+      this.store.subscribe(function () {
+        var state = _this.store.getState();
+        _this.switcher(state);
+      });
     }
 
     /**
-     * Initializing the application object
+     * Create store of component
+     * @param {function} reducer
+     * @param {object} initialState
+     * @returns {object} - Store
      */
 
+  }, {
+    key: 'switcher',
 
-    _createClass(App, [{
-        key: 'init',
-        value: function init() {
-            var _this = this;
 
-            this.store.subscribe(function () {
-                var state = _this.store.getState();
-                _this.filter(state);
-            });
+    /**
+     * Switch the control flow according to the state
+     * @param state
+     */
+    value: function switcher(state) {
+      switch (state.status) {
+        case 'location':
+          this.store.dispatch(this.actions.wait());
+          this.getAddress(state.location);
+          this.getWeather(state.location);
+          break;
+        default:
+          App.render(state);
+          break;
+      }
+    }
+
+    /**
+     * Update DOM
+     * @param state
+     */
+
+  }, {
+    key: 'getAddress',
+
+
+    /**
+     * Get address and dispatch a due action.
+     * @param location
+     */
+    value: function getAddress(location) {
+      var _this2 = this;
+
+      var url = 'https://maps.googleapis.com/maps/api/geocode/json';
+      _ajax2.default.get(url, {
+        latlng: location.lat + ',' + location.lng,
+        key: 'AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78'
+      }).then(function (data) {
+        if (data.error) {
+          _this2.store.dispatch(_this2.actions.error());
+          return;
         }
-
-        /**
-         * Create store of component
-         * @param {function} reducer
-         * @param {object} initialState
-         * @returns {object} - Store
-         */
-
-    }, {
-        key: 'createStore',
-        value: function createStore(reducer, initialState) {
-            var currentReducer = reducer;
-            var currentState = initialState;
-            var listener = function listener() {};
-            return {
-                getState: function getState() {
-                    return currentState;
-                },
-                dispatch: function dispatch(action) {
-                    currentState = currentReducer(currentState, action);
-                    listener();
-                    return action;
-                },
-                subscribe: function subscribe(newListener) {
-                    listener = newListener;
-                }
-            };
+        if (Array.isArray(data.results) && data.results[0] !== undefined && data.results[0].formatted_address !== undefined) {
+          _this2.store.dispatch(_this2.actions.address(data.results[0].formatted_address));
+        } else {
+          _this2.store.dispatch(_this2.actions.address('unknown'));
         }
+      });
+    }
 
-        /**
-         * Return new state
-         * @param {object} state - Current state
-         * @param {object} action - Dispatched action
-         * @returns {object} - New state
-         */
+    /**
+     * Get weather and dispatch a due action.
+     * @param location
+     */
 
-    }, {
-        key: 'reducer',
-        value: function reducer(state, action) {
-            switch (action.type) {
-                case 'wait':
-                    return Object.assign({}, state, {
-                        status: 'waiting'
-                    });
-                case 'error':
-                    return Object.assign({}, state, {
-                        status: 'error'
-                    });
-                case 'location':
-                    return Object.assign({}, state, {
-                        location: action.data,
-                        status: 'location'
-                    });
-                case 'address':
-                    return Object.assign({}, state, {
-                        address: action.data,
-                        status: 'address'
-                    });
-                case 'weather':
-                    return Object.assign({}, state, {
-                        weather: action.data,
-                        status: 'ready'
-                    });
-                default:
-                    return state;
-            }
+  }, {
+    key: 'getWeather',
+    value: function getWeather(location) {
+      var _this3 = this;
+
+      var url = 'https://fcc-weather-api.glitch.me/api/current';
+      _ajax2.default.get(url, {
+        lat: location.lat,
+        lon: location.lng
+      }).then(function (data) {
+        if (data.error) {
+          _this3.store.dispatch(_this3.actions.error());
+          return;
         }
-    }, {
-        key: 'filter',
-        value: function filter(state) {
-            switch (state.status) {
-                case 'location':
-                    this.store.dispatch(this.actions.wait());
-                    this.getAddress(state.location);
-                    this.getWeather(state.location);
-                    break;
-                default:
-                    this.render(state);
-                    break;
-            }
+        _this3.store.dispatch(_this3.actions.weather(data));
+      });
+    }
+  }], [{
+    key: 'createStore',
+    value: function createStore(reducer, initialState) {
+      var currentReducer = reducer;
+      var currentState = initialState;
+      var listener = function listener() {};
+      return {
+        getState: function getState() {
+          return currentState;
+        },
+        dispatch: function dispatch(action) {
+          currentState = currentReducer(currentState, action);
+          listener();
+          return action;
+        },
+        subscribe: function subscribe(newListener) {
+          listener = newListener;
         }
+      };
+    }
 
-        /**
-         * Update view of component
-         * @param state
-         */
+    /**
+     * Return new state
+     * @param {object} state - Current state
+     * @param {object} action - Dispatched action
+     * @returns {object} - New state
+     */
 
-    }, {
-        key: 'render',
-        value: function render(state) {
-            console.log(state);
-            var updatables = document.querySelector('.updatable');
-            var icon = document.querySelector('#icon');
-            var address = document.querySelector('#address');
-            switch (state.status) {
-                case 'waiting':
-                    updatables.classList.add('transparent');
-                    break;
-                case 'error':
-                    break;
-                case 'ready':
-                    var temp = document.querySelector('#temp');
-                    var sky = document.querySelector('#sky');
-                    var pressure = document.querySelector('#pressure');
-                    var humidity = document.querySelector('#humidity');
-                    var lat = document.querySelector('#lat');
-                    var lng = document.querySelector('#lng');
-                    icon.innerHTML = '';
-                    if (Array.isArray(state.weather.weather) && state.weather.weather[0].icon !== void 0) {
-                        var iconURL = state.weather.weather[0].icon.split('?')[0];
-                        icon.innerHTML = '';
-                        icon.appendChild(_htmlHelper2.default.tag('img', null, {
-                            src: iconURL,
-                            alt: state.weather.weather[0].description
-                        }, null));
-                        sky.innerHTML = state.weather.weather[0].main;
-                    }
-                    if (state.weather.main !== void 0) {
-                        temp.innerHTML = Math.round(state.weather.main.temp) + ' \xB0C';
-                        pressure.innerHTML = Math.round(state.weather.main.pressure) + ' mbar';
-                        humidity.innerHTML = state.weather.main.humidity + ' %';
-                    }
-                    lat.innerHTML = state.location.lat.toFixed(3);
-                    lng.innerHTML = state.location.lng.toFixed(3);
-                    updatables.classList.remove('transparent');
-                    break;
-                case 'address':
-                    address.innerHTML = state.address;
-                    break;
-                default:
-                    break;
+  }, {
+    key: 'reducer',
+    value: function reducer(state, action) {
+      switch (action.type) {
+        case 'wait':
+          return Object.assign({}, state, {
+            status: 'waiting'
+          });
+        case 'error':
+          return Object.assign({}, state, {
+            status: 'error'
+          });
+        case 'location':
+          return Object.assign({}, state, {
+            location: action.data,
+            status: 'location'
+          });
+        case 'address':
+          return Object.assign({}, state, {
+            address: action.data,
+            status: 'address'
+          });
+        case 'weather':
+          return Object.assign({}, state, {
+            weather: action.data,
+            status: 'ready'
+          });
+        default:
+          return state;
+      }
+    }
+  }, {
+    key: 'render',
+    value: function render(state) {
+      var updatables = document.querySelector('.updatable');
+      var icon = document.querySelector('#icon');
+      var address = document.querySelector('#address');
+      var temp = document.querySelector('#temp');
+      var pressure = document.querySelector('#pressure');
+      var humidity = document.querySelector('#humidity');
+      var lat = document.querySelector('#lat');
+      var lng = document.querySelector('#lng');
+      var sky = document.querySelector('#sky');
+      var iconURL = void 0;
+      switch (state.status) {
+        case 'waiting':
+          updatables.classList.add('transparent');
+          break;
+        case 'ready':
+          icon.innerHTML = '';
+          if (Array.isArray(state.weather.weather) && state.weather.weather[0].icon !== undefined) {
+            iconURL = state.weather.weather[0].icon.split('?')[0];
+            icon.innerHTML = '';
+            icon.appendChild(_htmlHelper2.default.tag('img', null, {
+              src: iconURL,
+              alt: state.weather.weather[0].description
+            }, null));
+            sky.innerHTML = state.weather.weather[0].main;
+          }
+          if (state.weather.main !== undefined) {
+            temp.innerHTML = Math.round(state.weather.main.temp) + ' \xB0C';
+            pressure.innerHTML = Math.round(state.weather.main.pressure) + ' mbar';
+            humidity.innerHTML = state.weather.main.humidity + ' %';
+          }
+          lat.innerHTML = state.location.lat.toFixed(3);
+          lng.innerHTML = state.location.lng.toFixed(3);
+          updatables.classList.remove('transparent');
+          break;
+        case 'address':
+          address.innerHTML = state.address;
+          break;
+        case 'error':
+          // Nothing yet
+          break;
+        default:
+          break;
+      }
+    }
+  }]);
 
-            }
-        }
-    }, {
-        key: 'getAddress',
-        value: function getAddress(location) {
-            var _this2 = this;
-
-            var url = 'https://maps.googleapis.com/maps/api/geocode/json';
-            _ajax2.default.get(url, {
-                latlng: location.lat + ',' + location.lng,
-                key: 'AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78'
-            }).then(function (data) {
-                if (data.error) {
-                    _this2.store.dispatch(_this2.actions.error());
-                    return;
-                }
-                if (Array.isArray(data.results) && data.results[0] !== void 0 && data.results[0].formatted_address !== void 0) {
-                    _this2.store.dispatch(_this2.actions.address(data.results[0].formatted_address));
-                } else {
-                    _this2.store.dispatch(_this2.actions.address('unknown'));
-                }
-            });
-        }
-    }, {
-        key: 'getWeather',
-        value: function getWeather(location) {
-            var _this3 = this;
-
-            var url = 'https://fcc-weather-api.glitch.me/api/current';
-            _ajax2.default.get(url, {
-                lat: location.lat,
-                lon: location.lng
-            }).then(function (data) {
-                if (data.error) {
-                    _this3.store.dispatch(_this3.actions.error());
-                    return;
-                }
-                _this3.store.dispatch(_this3.actions.weather(data));
-            });
-        }
-    }]);
-
-    return App;
+  return App;
 }();
 
 exports.default = App;
@@ -437,7 +452,7 @@ exports.default = App;
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 /**
  * ajax.js
@@ -448,45 +463,41 @@ Object.defineProperty(exports, "__esModule", {
 var ajax = {};
 
 function error(e) {
-    return {
-        error: e
-    };
+  return {
+    error: e
+  };
 }
 
 function json(response) {
-    return response.json();
+  return response.json();
 }
 
 function status(response) {
-    if (response.ok) {
-        return response;
-    }
-    throw new Error(response.statusText);
+  if (response.ok) {
+    return response;
+  }
+  throw new Error(response.statusText);
 }
 
 ajax.get = function (url, parameters) {
-    var paramString = '';
-    for (var key in parameters) {
-        if (Object.prototype.hasOwnProperty.call(parameters, key)) {
-            if (paramString !== '') {
-                paramString += '&';
-            } else {
-                paramString = '?';
-            }
-            paramString += key + '=' + parameters[key];
-        }
+  var paramString = '';
+  Object.keys(parameters).forEach(function (item) {
+    if (paramString !== '') {
+      paramString += '&';
+    } else {
+      paramString = '?';
     }
-    return fetch(url + paramString).then(status).then(json).catch(error);
+    paramString += item + '=' + parameters[item];
+  });
+  return fetch(url + paramString).then(status).then(json).catch(error);
 };
 
 ajax.post = function (url, headers, body) {
-
-    return fetch(url, {
-        headers: headers,
-        method: 'POST',
-        mode: mode,
-        body: JSON.stringify(body)
-    }).then(status).then(json).catch(error);
+  return fetch(url, {
+    headers: headers,
+    method: 'POST',
+    body: JSON.stringify(body)
+  }).then(status).then(json).catch(error);
 };
 
 exports.default = ajax;
@@ -499,7 +510,7 @@ exports.default = ajax;
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -524,75 +535,70 @@ var html = {};
  * @return {Object}         DOM element
  */
 html.tag = function (htmlTag, innerHTML, attrs, style) {
-
-    var element = void 0;
-
-    function addAttrs() {
-        for (var key in attrs) {
-            if (!Object.prototype.hasOwnProperty.call(attrs, key)) {
-                continue;
-            }
-            var valueStr = void 0;
-            if (Array.isArray(attrs[key])) {
-                valueStr = attrs[key].join(' ');
-            } else {
-                valueStr = attrs[key];
-            }
-            element.setAttribute(key, valueStr);
+  var element = void 0;
+  function addAttrs() {
+    if (attrs) {
+      Object.keys(attrs).forEach(function (item) {
+        var valueStr = void 0;
+        if (Array.isArray(attrs[item])) {
+          valueStr = attrs[item].join(' ');
+        } else {
+          valueStr = attrs[item];
         }
+        element.setAttribute(item, valueStr);
+      });
     }
+  }
 
-    function addChildren() {
-        if (typeof innerHTML === 'string') {
-            element.innerHTML = innerHTML;
-            return;
+  function addChildren() {
+    if (typeof innerHTML === 'string') {
+      element.innerHTML = innerHTML;
+      return;
+    }
+    if (innerHTML instanceof HTMLElement) {
+      element.appendChild(innerHTML);
+      return;
+    }
+    if (Array.isArray(innerHTML)) {
+      innerHTML.forEach(function (value) {
+        if (value instanceof HTMLElement) {
+          element.appendChild(value);
         }
-        if (innerHTML instanceof HTMLElement) {
-            element.appendChild(innerHTML);
-            return;
+      });
+    }
+  }
+
+  function addStyles() {
+    if (style) {
+      Object.keys(style).forEach(function (item) {
+        if (typeof style[item] === 'string') {
+          element.style[item] = style[item];
         }
-        if (Array.isArray(innerHTML)) {
-            innerHTML.forEach(function (value) {
-                if (value instanceof HTMLElement) {
-                    element.appendChild(value);
-                }
-            });
-        }
+      });
     }
+  }
 
-    function addStyles() {
-        var key = void 0;
-        for (key in style) {
-            if (!Object.prototype.hasOwnProperty.call(style, key)) {
-                continue;
-            }
-            if (typeof style[key] === 'string') {
-                element.style[key] = style[key];
-            }
-        }
-    }
+  /* BEGIN */
 
-    /* BEGIN */
+  if (typeof htmlTag === 'string') {
+    element = document.createElement(htmlTag);
+  } else {
+    element = document.createElement('div');
+  }
 
-    if (typeof htmlTag === 'string') {
-        element = document.createElement(htmlTag);
-    } else {
-        element = document.createElement('div');
-    }
+  if ((typeof attrs === 'undefined' ? 'undefined' : _typeof(attrs)) === 'object') {
+    addAttrs();
+  }
 
-    if ((typeof attrs === 'undefined' ? 'undefined' : _typeof(attrs)) === 'object') {
-        addAttrs();
-    }
+  if (innerHTML) {
+    addChildren();
+  }
 
-    if (innerHTML) {
-        addChildren();
-    }
+  if ((typeof style === 'undefined' ? 'undefined' : _typeof(style)) === 'object') {
+    addStyles();
+  }
 
-    if ((typeof style === 'undefined' ? 'undefined' : _typeof(style)) === 'object') {
-        addStyles();
-    }
-
-    return element;
+  return element;
 };
 
 /**
@@ -607,11 +613,11 @@ html.tag = function (htmlTag, innerHTML, attrs, style) {
  * @return {Object}         DOM element     Link element
  */
 html.a = function (innerHTML, url, attrs, style) {
-    var element = html.tag('a', innerHTML, attrs, style);
-    if (typeof url === 'string') {
-        element.setAttribute('href', url);
-    }
-    return element;
+  var element = html.tag('a', innerHTML, attrs, style);
+  if (typeof url === 'string') {
+    element.setAttribute('href', url);
+  }
+  return element;
 };
 
 exports.default = html;

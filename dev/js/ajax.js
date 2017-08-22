@@ -4,54 +4,50 @@
  * https://github.com/ignorantic/weather.git
  */
 
-let ajax = {};
+const ajax = {};
 
-function error (e) {
-    return {
-        error: e
-    };
+function error(e) {
+  return {
+    error: e,
+  };
 }
 
 function json(response) {
-    return response.json();
+  return response.json();
 }
 
 function status(response) {
-    if (response.ok) {
-        return response;
-    }
-    throw new Error(response.statusText);
+  if (response.ok) {
+    return response;
+  }
+  throw new Error(response.statusText);
 }
 
-ajax.get = function(url, parameters) {
-    let paramString = '';
-    for (let key in parameters) {
-        if (Object.prototype.hasOwnProperty.call(parameters, key)) {
-            if (paramString !== '') {
-                paramString += '&';
-            } else {
-                paramString = '?';
-            }
-            paramString += `${key}=${parameters[key]}`;
-        }
+ajax.get = (url, parameters) => {
+  let paramString = '';
+  Object.keys(parameters).forEach((item) => {
+    if (paramString !== '') {
+      paramString += '&';
+    } else {
+      paramString = '?';
     }
-    return fetch(url + paramString)
-        .then(status)
-        .then(json)
-        .catch(error);
-};
-
-ajax.post = function(url, headers, body) {
-
-    return fetch(url, {
-        headers: headers,
-        method: 'POST',
-        mode: mode,
-        body: JSON.stringify(body)
-    })
+    paramString += `${item}=${parameters[item]}`;
+  });
+  return fetch(url + paramString)
     .then(status)
     .then(json)
     .catch(error);
 };
+
+ajax.post = (url, headers, body) =>
+  fetch(url, {
+    headers,
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+    .then(status)
+    .then(json)
+    .catch(error);
+
 
 export default ajax;
