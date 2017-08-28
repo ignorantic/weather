@@ -53,19 +53,22 @@ document.addEventListener('DOMContentLoaded', () => {
       fullscreenControl: false,
     });
 
-    app.store.dispatch(app.actions.wait());
+    window.map = map;
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         initMarker({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
+        window.marker = marker;
       },
       () => {
         initMarker({
           lat: 0,
           lng: 0,
         });
+        window.marker = marker;
       },
     );
 

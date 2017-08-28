@@ -17,15 +17,14 @@ export default class App {
       address: '',
       weather: {},
       status: 'ready',
+      units: {
+        visible: false,
+        value: 'metric',
+      },
     };
 
     // Create action generators
     this.actions = {
-      wait() {
-        return {
-          type: 'wait',
-        };
-      },
       error() {
         return {
           type: 'error',
@@ -34,6 +33,12 @@ export default class App {
       location(data) {
         return {
           type: 'location',
+          data,
+        };
+      },
+      input(data) {
+        return {
+          type: 'input',
           data,
         };
       },
@@ -49,7 +54,30 @@ export default class App {
           data,
         };
       },
+      showUnits() {
+        return {
+          type: 'showUnits',
+        };
+      },
+      hideUnits() {
+        return {
+          type: 'hideUnits',
+        };
+      },
+      toggleUnits() {
+        return {
+          type: 'toggleUnits',
+        };
+      },
+      changeUnits(data) {
+        return {
+          type: 'changeUnits',
+          data,
+        };
+      },
     };
+
+    this.initsTimer = null;
   }
 
   /**
@@ -63,6 +91,82 @@ export default class App {
       const state = this.store.getState();
       this.switcher(state);
     });
+
+    this.constructor.on([{
+      event: 'mousedown',
+      selector: '#units-dropdown',
+      action: (e) => {
+        e.stopPropagation();
+      },
+    }, {
+      event: 'click',
+      selector: '#units-dropdown',
+      action: (e) => {
+        e.stopPropagation();
+        this.store.dispatch(this.actions.toggleUnits());
+      },
+    }, {
+      event: 'mousedown',
+      selector: '#weather',
+      action: (e) => {
+        e.stopPropagation();
+        this.store.dispatch(this.actions.hideUnits());
+      },
+    }, {
+      event: 'mousedown',
+      selector: '#map',
+      action: () => {
+        this.store.dispatch(this.actions.hideUnits());
+      },
+    }, {
+      event: 'change',
+      selector: '[name=units]',
+      action: (e) => {
+        this.store.dispatch(this.actions.changeUnits(e.target.value));
+      },
+    }, {
+      event: 'mouseleave',
+      selector: '#units-dropdown',
+      action: () => {
+        this.initsTimer = setTimeout(() => {
+          this.store.dispatch(this.actions.hideUnits());
+        },
+        1000);
+      },
+    }, {
+      event: 'mouseleave',
+      selector: '#units',
+      action: () => {
+        this.initsTimer = setTimeout(() => {
+          this.store.dispatch(this.actions.hideUnits());
+        },
+        1000);
+      },
+    }, {
+      event: 'mouseover',
+      selector: '#units',
+      action: () => {
+        if (this.initsTimer !== null) {
+          clearTimeout(this.initsTimer);
+          this.initsTimer = null;
+        }
+      },
+    }, {
+      event: 'mouseover',
+      selector: '#units-dropdown',
+      action: () => {
+        if (this.initsTimer !== null) {
+          clearTimeout(this.initsTimer);
+          this.initsTimer = null;
+        }
+      },
+    }, {
+      event: 'input',
+      selector: '#input',
+      action: (e) => {
+        this.store.dispatch(this.actions.input(e.target.value));
+      },
+    }]);
   }
 
   /**
@@ -99,10 +203,6 @@ export default class App {
    */
   static reducer(state, action) {
     switch (action.type) {
-      case 'wait':
-        return Object.assign({}, state, {
-          status: 'waiting',
-        });
       case 'error':
         return Object.assign({}, state, {
           status: 'error',
@@ -111,6 +211,11 @@ export default class App {
         return Object.assign({}, state, {
           location: action.data,
           status: 'location',
+        });
+      case 'input':
+        return Object.assign({}, state, {
+          string: action.data,
+          status: 'input',
         });
       case 'address':
         return Object.assign({}, state, {
@@ -121,6 +226,34 @@ export default class App {
         return Object.assign({}, state, {
           weather: action.data,
           status: 'ready',
+        });
+      case 'showUnits':
+        return Object.assign({}, state, {
+          units: {
+            visible: true,
+            value: state.units.value,
+          },
+        });
+      case 'hideUnits':
+        return Object.assign({}, state, {
+          units: {
+            visible: false,
+            value: state.units.value,
+          },
+        });
+      case 'toggleUnits':
+        return Object.assign({}, state, {
+          units: {
+            visible: !state.units.visible,
+            value: state.units.value,
+          },
+        });
+      case 'changeUnits':
+        return Object.assign({}, state, {
+          units: {
+            value: action.data,
+            visible: state.units.visible,
+          },
         });
       default:
         return state;
@@ -133,9 +266,12 @@ export default class App {
    */
   switcher(state) {
     switch (state.status) {
+      case 'input':
+        this.getAddressByString(state.string);
+        this.getWeather(state.location);
+        break;
       case 'location':
-        this.store.dispatch(this.actions.wait());
-        this.getAddress(state.location);
+        this.getAddressByLocation(state.location);
         this.getWeather(state.location);
         break;
       default:
@@ -150,18 +286,32 @@ export default class App {
    */
   static render(state) {
     let items = {};
-    const updatables = document.querySelector('.updatable');
     const icon = document.querySelector('#icon');
     const address = document.querySelector('#address');
+    const units = document.querySelector('#units');
     switch (state.status) {
-      case 'waiting':
-        updatables.classList.add('transparent');
-        break;
       case 'ready':
+        if (state.units.visible) {
+          units.classList.add('units_active');
+        } else {
+          units.classList.remove('units_active');
+        }
         if (state.weather.main !== undefined) {
+          let pressure;
+          let temp;
+          switch (state.units.value) {
+            case 'imperial':
+              temp = `${Math.round((state.weather.main.temp * 1.8) + 32)} °F`;
+              pressure = `${(state.weather.main.pressure * 0.02953).toFixed(2)} in`;
+              break;
+            default:
+              temp = `${Math.round(state.weather.main.temp)} °C`;
+              pressure = `${Math.round(state.weather.main.pressure)} mbar`;
+              break;
+          }
           items = {
-            '#temp': `${Math.round(state.weather.main.temp)} °C`,
-            '#pressure': `${Math.round(state.weather.main.pressure)} mbar`,
+            '#temp': temp,
+            '#pressure': pressure,
             '#humidity': `${state.weather.main.humidity} %`,
           };
         }
@@ -176,7 +326,6 @@ export default class App {
         Object.keys(items).forEach((key) => {
           document.querySelector(key).innerHTML = items[key];
         });
-        updatables.classList.remove('transparent');
         break;
       case 'address':
         address.innerHTML = state.address;
@@ -196,7 +345,6 @@ export default class App {
         Object.keys(items).forEach((key) => {
           document.querySelector(key).innerHTML = items[key];
         });
-        updatables.classList.remove('transparent');
         break;
       default:
         break;
@@ -204,10 +352,53 @@ export default class App {
   }
 
   /**
+   * Registrate event handlers
+   * @param {array} array - [{
+     *                  event: 'click' | ['click', 'resize'],
+     *                  selector: '.button',
+     *                  action: () => a + b
+     *                }]
+   */
+  static on(array) {
+    array.forEach((item) => {
+      if (typeof item.event === 'string') {
+        App.addListener(item.event, item.selector, item.action);
+      } else if (Array.isArray(item.event)) {
+        item.event.forEach((event) => {
+          if (typeof event === 'string') {
+            App.addListener(event, item.selector, item.action);
+          } else {
+            throw new Error(`Invalid event name: ${event}`);
+          }
+        });
+      } else {
+        throw new Error(`Invalid event name: ${item.event}`);
+      }
+    });
+  }
+
+  /**
+   * Add event listener
+   * @param {string} event
+   * @param {string|window} selector
+   * @param {function} action
+   */
+  static addListener(event, selector, action) {
+    if (selector === 'window') {
+      window.addEventListener(event, action, false);
+    } else if (typeof selector === 'string') {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(element => element.addEventListener(event, action, false));
+    } else {
+      throw new Error(`Invalid selector value: ${selector}`);
+    }
+  }
+
+  /**
    * Get address and dispatch a due action.
    * @param location
    */
-  getAddress(location) {
+  getAddressByLocation(location) {
     const url = 'https://maps.googleapis.com/maps/api/geocode/json';
     ajax.get(url, {
       latlng: `${location.lat},${location.lng}`,
@@ -220,6 +411,32 @@ export default class App {
       if (Array.isArray(data.results) && data.results[0] !== undefined
         && data.results[0].formatted_address !== undefined) {
         this.store.dispatch(this.actions.address(data.results[0].formatted_address));
+      } else {
+        this.store.dispatch(this.actions.address('unknown'));
+      }
+    });
+  }
+
+  /**
+   * Get address and dispatch a due action.
+   * @param string
+   */
+  getAddressByString(string) {
+    const url = 'https://maps.googleapis.com/maps/api/geocode/json';
+    ajax.get(url, {
+      address: string,
+      key: 'AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78',
+    }).then((data) => {
+      if (data.error) {
+        this.store.dispatch(this.actions.error());
+        return;
+      }
+      if (Array.isArray(data.results) && data.results[0] !== undefined
+        && data.results[0].formatted_address !== undefined) {
+        this.store.dispatch(this.actions.address(data.results[0].formatted_address));
+        this.store.dispatch(this.actions.location(data.results[0].geometry.location));
+        window.marker.setPosition(data.results[0].geometry.location);
+        window.map.setCenter(window.marker.getPosition());
       } else {
         this.store.dispatch(this.actions.address('unknown'));
       }

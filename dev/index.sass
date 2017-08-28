@@ -1,5 +1,7 @@
 $face: #fff
 $back: #000
+$hover: #ebebeb
+$disabled: #c8c8c8
 $shadow: rgba(0, 0, 0, 0.3)
 
 body
@@ -31,17 +33,61 @@ body
   margin-right: 5px
   font-weight: 700
 
-.weather
-  position: fixed
-  left: 10px
-  top: 10px
-  min-height: 160px
-  width: 150px
-  padding: 10px
+.control
   border-radius: 1.5px
   background: $face
   box-shadow: $shadow 0 1px 4px -1px
+
+.units
+  display: none
+  justify-content: space-between
+  position: fixed
+  left: 115px
+  top: 30px
+  width: 130px
+  z-index: 20
+
+.units_active
+  display: flex
+
+.units__label
+  padding: 10px
+  color: $disabled
+  cursor: pointer
+
+.units__input
+  display: none
+
+  &:not(:checked) + .units__label
+    &:hover
+      background: $hover
+      border-radius: 1.5px
+
+  &:checked + .units__label
+    color: $back
+    cursor: default
+
+.weather
+  position: fixed
+  padding: 10px
+  left: 10px
+  top: 10px
+  height: 200px
+  width: 170px
   z-index: 10
+
+.weather__units-dropdown
+  cursor: pointer
+  position: absolute
+  top: 12px
+  left: 165px
+  width: 0
+  height: 0
+  border-style: solid
+  border-color: $face
+  border-top-color: $back
+  border-width: 5px
+  z-index: 15
 
 .weather__icon
   height: 50px
@@ -58,11 +104,16 @@ body
 .weather__temp
   font-size: 1.4rem
 
+.input
+  position: fixed
+  left: 10px
+  top: 240px
+  width: 170px
+  padding: 10px
+  font-size: 1rem
+  outline: none
+  border: 0
+  z-index: 15
+
 .sky
   font-size: 1.2rem
-
-.updatable
-  transition: opacity 0.5s
-
-.transparent
-  opacity: 0

@@ -8,29 +8,32 @@ html(lang="en")
         title Weather
         link(rel="icon" type="image/x-icon" href="weather.ico")
     body
-        .container
-            .row
-                .weather
-                    .updatable
-                        .weather__head
-                            .weather__icon
-                                img#icon
-                            .weather__main
-                                p#temp.weather__temp.text
-                                p#sky.weather__sky.text
-                        .weather__list
-                            p.text.text_title Pressure:
-                            p#pressure.text
-                            p.text.text_title Humidity:
-                            p#humidity.text
-                            p.text.text_title Latitude:
-                            p#lat.text
-                            p.text.text_title Longitude:
-                            p#lng.text
-                            p.text.text_title Address:
-                            p#address.text
-            .row
-                #map.map
+        #weather.weather.control
+            .weather__head
+                .weather__icon
+                    img#icon
+                .weather__main
+                    p#temp.weather__temp.text
+                    p#sky.weather__sky.text
+            .weather__list
+                #units-dropdown.weather__units-dropdown
+                p.text.text_title Pressure:
+                p#pressure.text
+                p.text.text_title Humidity:
+                p#humidity.text
+                p.text.text_title Latitude:
+                p#lat.text
+                p.text.text_title Longitude:
+                p#lng.text
+                p.text.text_title Address:
+                p#address.text
+        #units.units.control
+            input.units__input(id="metric" type="radio" name="units" value="metric" checked)
+            label.text.units__label(for="metric") Metric
+            input.units__input(id="imperial" type="radio" name="units" value="imperial")
+            label.text.units__label(for="imperial") Imperial
+        input#input.input.control(spellcheck="false" autocomplete="off" placeholder="Search")
+        #map.map
         script(type="text/javascript" src="js/app.js")
         script(async defer
             src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78&callback=initMap")
