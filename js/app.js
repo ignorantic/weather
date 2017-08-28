@@ -123,17 +123,20 @@ document.addEventListener('DOMContentLoaded', function () {
       fullscreenControl: false
     });
 
-    app.store.dispatch(app.actions.wait());
+    window.map = map;
+
     navigator.geolocation.getCurrentPosition(function (position) {
       initMarker({
         lat: position.coords.latitude,
         lng: position.coords.longitude
       });
+      window.marker = marker;
     }, function () {
       initMarker({
         lat: 0,
         lng: 0
       });
+      window.marker = marker;
     });
 
     map.addListener('click', function (e) {
@@ -189,16 +192,15 @@ var App = function () {
       location: {},
       address: '',
       weather: {},
-      status: 'ready'
+      status: 'ready',
+      units: {
+        visible: false,
+        value: 'metric'
+      }
     };
 
     // Create action generators
     this.actions = {
-      wait: function wait() {
-        return {
-          type: 'wait'
-        };
-      },
       error: function error() {
         return {
           type: 'error'
@@ -207,6 +209,12 @@ var App = function () {
       location: function location(data) {
         return {
           type: 'location',
+          data: data
+        };
+      },
+      input: function input(data) {
+        return {
+          type: 'input',
           data: data
         };
       },
@@ -221,8 +229,31 @@ var App = function () {
           type: 'weather',
           data: data
         };
+      },
+      showUnits: function showUnits() {
+        return {
+          type: 'showUnits'
+        };
+      },
+      hideUnits: function hideUnits() {
+        return {
+          type: 'hideUnits'
+        };
+      },
+      toggleUnits: function toggleUnits() {
+        return {
+          type: 'toggleUnits'
+        };
+      },
+      changeUnits: function changeUnits(data) {
+        return {
+          type: 'changeUnits',
+          data: data
+        };
       }
     };
+
+    this.initsTimer = null;
   }
 
   /**
@@ -242,6 +273,80 @@ var App = function () {
         var state = _this.store.getState();
         _this.switcher(state);
       });
+
+      this.constructor.on([{
+        event: 'mousedown',
+        selector: '#units-dropdown',
+        action: function action(e) {
+          e.stopPropagation();
+        }
+      }, {
+        event: 'click',
+        selector: '#units-dropdown',
+        action: function action(e) {
+          e.stopPropagation();
+          _this.store.dispatch(_this.actions.toggleUnits());
+        }
+      }, {
+        event: 'mousedown',
+        selector: '#weather',
+        action: function action(e) {
+          e.stopPropagation();
+          _this.store.dispatch(_this.actions.hideUnits());
+        }
+      }, {
+        event: 'mousedown',
+        selector: '#map',
+        action: function action() {
+          _this.store.dispatch(_this.actions.hideUnits());
+        }
+      }, {
+        event: 'change',
+        selector: '[name=units]',
+        action: function action(e) {
+          _this.store.dispatch(_this.actions.changeUnits(e.target.value));
+        }
+      }, {
+        event: 'mouseleave',
+        selector: '#units-dropdown',
+        action: function action() {
+          _this.initsTimer = setTimeout(function () {
+            _this.store.dispatch(_this.actions.hideUnits());
+          }, 1000);
+        }
+      }, {
+        event: 'mouseleave',
+        selector: '#units',
+        action: function action() {
+          _this.initsTimer = setTimeout(function () {
+            _this.store.dispatch(_this.actions.hideUnits());
+          }, 1000);
+        }
+      }, {
+        event: 'mouseover',
+        selector: '#units',
+        action: function action() {
+          if (_this.initsTimer !== null) {
+            clearTimeout(_this.initsTimer);
+            _this.initsTimer = null;
+          }
+        }
+      }, {
+        event: 'mouseover',
+        selector: '#units-dropdown',
+        action: function action() {
+          if (_this.initsTimer !== null) {
+            clearTimeout(_this.initsTimer);
+            _this.initsTimer = null;
+          }
+        }
+      }, {
+        event: 'input',
+        selector: '#input',
+        action: function action(e) {
+          _this.store.dispatch(_this.actions.input(e.target.value));
+        }
+      }]);
     }
 
     /**
@@ -261,9 +366,12 @@ var App = function () {
      */
     value: function switcher(state) {
       switch (state.status) {
+        case 'input':
+          this.getAddressByString(state.string);
+          this.getWeather(state.location);
+          break;
         case 'location':
-          this.store.dispatch(this.actions.wait());
-          this.getAddress(state.location);
+          this.getAddressByLocation(state.location);
           this.getWeather(state.location);
           break;
         default:
@@ -278,14 +386,14 @@ var App = function () {
      */
 
   }, {
-    key: 'getAddress',
+    key: 'getAddressByLocation',
 
 
     /**
      * Get address and dispatch a due action.
      * @param location
      */
-    value: function getAddress(location) {
+    value: function getAddressByLocation(location) {
       var _this2 = this;
 
       var url = 'https://maps.googleapis.com/maps/api/geocode/json';
@@ -306,6 +414,36 @@ var App = function () {
     }
 
     /**
+     * Get address and dispatch a due action.
+     * @param string
+     */
+
+  }, {
+    key: 'getAddressByString',
+    value: function getAddressByString(string) {
+      var _this3 = this;
+
+      var url = 'https://maps.googleapis.com/maps/api/geocode/json';
+      _ajax2.default.get(url, {
+        address: string,
+        key: 'AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78'
+      }).then(function (data) {
+        if (data.error) {
+          _this3.store.dispatch(_this3.actions.error());
+          return;
+        }
+        if (Array.isArray(data.results) && data.results[0] !== undefined && data.results[0].formatted_address !== undefined) {
+          _this3.store.dispatch(_this3.actions.address(data.results[0].formatted_address));
+          _this3.store.dispatch(_this3.actions.location(data.results[0].geometry.location));
+          window.marker.setPosition(data.results[0].geometry.location);
+          window.map.setCenter(window.marker.getPosition());
+        } else {
+          _this3.store.dispatch(_this3.actions.address('unknown'));
+        }
+      });
+    }
+
+    /**
      * Get weather and dispatch a due action.
      * @param location
      */
@@ -313,7 +451,7 @@ var App = function () {
   }, {
     key: 'getWeather',
     value: function getWeather(location) {
-      var _this3 = this;
+      var _this4 = this;
 
       var url = 'https://fcc-weather-api.glitch.me/api/current';
       _ajax2.default.get(url, {
@@ -321,10 +459,10 @@ var App = function () {
         lon: location.lng
       }).then(function (data) {
         if (data.error) {
-          _this3.store.dispatch(_this3.actions.error());
+          _this4.store.dispatch(_this4.actions.error());
           return;
         }
-        _this3.store.dispatch(_this3.actions.weather(data));
+        _this4.store.dispatch(_this4.actions.weather(data));
       });
     }
   }], [{
@@ -359,10 +497,6 @@ var App = function () {
     key: 'reducer',
     value: function reducer(state, action) {
       switch (action.type) {
-        case 'wait':
-          return Object.assign({}, state, {
-            status: 'waiting'
-          });
         case 'error':
           return Object.assign({}, state, {
             status: 'error'
@@ -371,6 +505,11 @@ var App = function () {
           return Object.assign({}, state, {
             location: action.data,
             status: 'location'
+          });
+        case 'input':
+          return Object.assign({}, state, {
+            string: action.data,
+            status: 'input'
           });
         case 'address':
           return Object.assign({}, state, {
@@ -382,6 +521,34 @@ var App = function () {
             weather: action.data,
             status: 'ready'
           });
+        case 'showUnits':
+          return Object.assign({}, state, {
+            units: {
+              visible: true,
+              value: state.units.value
+            }
+          });
+        case 'hideUnits':
+          return Object.assign({}, state, {
+            units: {
+              visible: false,
+              value: state.units.value
+            }
+          });
+        case 'toggleUnits':
+          return Object.assign({}, state, {
+            units: {
+              visible: !state.units.visible,
+              value: state.units.value
+            }
+          });
+        case 'changeUnits':
+          return Object.assign({}, state, {
+            units: {
+              value: action.data,
+              visible: state.units.visible
+            }
+          });
         default:
           return state;
       }
@@ -390,18 +557,32 @@ var App = function () {
     key: 'render',
     value: function render(state) {
       var items = {};
-      var updatables = document.querySelector('.updatable');
       var icon = document.querySelector('#icon');
       var address = document.querySelector('#address');
+      var units = document.querySelector('#units');
       switch (state.status) {
-        case 'waiting':
-          updatables.classList.add('transparent');
-          break;
         case 'ready':
+          if (state.units.visible) {
+            units.classList.add('units_active');
+          } else {
+            units.classList.remove('units_active');
+          }
           if (state.weather.main !== undefined) {
+            var pressure = void 0;
+            var temp = void 0;
+            switch (state.units.value) {
+              case 'imperial':
+                temp = Math.round(state.weather.main.temp * 1.8 + 32) + ' \xB0F';
+                pressure = (state.weather.main.pressure * 0.02953).toFixed(2) + ' in';
+                break;
+              default:
+                temp = Math.round(state.weather.main.temp) + ' \xB0C';
+                pressure = Math.round(state.weather.main.pressure) + ' mbar';
+                break;
+            }
             items = {
-              '#temp': Math.round(state.weather.main.temp) + ' \xB0C',
-              '#pressure': Math.round(state.weather.main.pressure) + ' mbar',
+              '#temp': temp,
+              '#pressure': pressure,
               '#humidity': state.weather.main.humidity + ' %'
             };
           }
@@ -415,7 +596,6 @@ var App = function () {
           Object.keys(items).forEach(function (key) {
             document.querySelector(key).innerHTML = items[key];
           });
-          updatables.classList.remove('transparent');
           break;
         case 'address':
           address.innerHTML = state.address;
@@ -435,10 +615,60 @@ var App = function () {
           Object.keys(items).forEach(function (key) {
             document.querySelector(key).innerHTML = items[key];
           });
-          updatables.classList.remove('transparent');
           break;
         default:
           break;
+      }
+    }
+
+    /**
+     * Registrate event handlers
+     * @param {array} array - [{
+       *                  event: 'click' | ['click', 'resize'],
+       *                  selector: '.button',
+       *                  action: () => a + b
+       *                }]
+     */
+
+  }, {
+    key: 'on',
+    value: function on(array) {
+      array.forEach(function (item) {
+        if (typeof item.event === 'string') {
+          App.addListener(item.event, item.selector, item.action);
+        } else if (Array.isArray(item.event)) {
+          item.event.forEach(function (event) {
+            if (typeof event === 'string') {
+              App.addListener(event, item.selector, item.action);
+            } else {
+              throw new Error('Invalid event name: ' + event);
+            }
+          });
+        } else {
+          throw new Error('Invalid event name: ' + item.event);
+        }
+      });
+    }
+
+    /**
+     * Add event listener
+     * @param {string} event
+     * @param {string|window} selector
+     * @param {function} action
+     */
+
+  }, {
+    key: 'addListener',
+    value: function addListener(event, selector, action) {
+      if (selector === 'window') {
+        window.addEventListener(event, action, false);
+      } else if (typeof selector === 'string') {
+        var elements = document.querySelectorAll(selector);
+        elements.forEach(function (element) {
+          return element.addEventListener(event, action, false);
+        });
+      } else {
+        throw new Error('Invalid selector value: ' + selector);
       }
     }
   }]);

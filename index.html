@@ -8,36 +8,36 @@
     <link rel="icon" type="image/x-icon" href="weather.ico">
   </head>
   <body>
-    <div class="container">
-      <div class="row">
-        <div class="weather">
-          <div class="updatable">
-            <div class="weather__head">
-              <div class="weather__icon"><img id="icon"></div>
-              <div class="weather__main">
-                <p class="weather__temp text" id="temp"></p>
-                <p class="weather__sky text" id="sky"></p>
-              </div>
-            </div>
-            <div class="weather__list">
-              <p class="text text_title">Pressure:</p>
-              <p class="text" id="pressure"></p>
-              <p class="text text_title">Humidity:</p>
-              <p class="text" id="humidity"></p>
-              <p class="text text_title">Latitude:</p>
-              <p class="text" id="lat"></p>
-              <p class="text text_title">Longitude:</p>
-              <p class="text" id="lng"></p>
-              <p class="text text_title">Address:</p>
-              <p class="text" id="address"></p>
-            </div>
-          </div>
+    <div class="weather control" id="weather">
+      <div class="weather__head">
+        <div class="weather__icon"><img id="icon"></div>
+        <div class="weather__main">
+          <p class="weather__temp text" id="temp"></p>
+          <p class="weather__sky text" id="sky"></p>
         </div>
       </div>
-      <div class="row">
-        <div class="map" id="map"></div>
+      <div class="weather__list">
+        <div class="weather__units-dropdown" id="units-dropdown"></div>
+        <p class="text text_title">Pressure:</p>
+        <p class="text" id="pressure"></p>
+        <p class="text text_title">Humidity:</p>
+        <p class="text" id="humidity"></p>
+        <p class="text text_title">Latitude:</p>
+        <p class="text" id="lat"></p>
+        <p class="text text_title">Longitude:</p>
+        <p class="text" id="lng"></p>
+        <p class="text text_title">Address:</p>
+        <p class="text" id="address"></p>
       </div>
     </div>
+    <div class="units control" id="units">
+      <input class="units__input" id="metric" type="radio" name="units" value="metric" checked>
+      <label class="text units__label" for="metric">Metric</label>
+      <input class="units__input" id="imperial" type="radio" name="units" value="imperial">
+      <label class="text units__label" for="imperial">Imperial</label>
+    </div>
+    <input class="input control" id="input" spellcheck="false" autocomplete="off" placeholder="Search">
+    <div class="map" id="map"></div>
     <script type="text/javascript" src="js/app.js"></script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0ActUGaLxSQdUaN6RdrNiCEvmMIoDa78&amp;callback=initMap"></script>
   </body>
