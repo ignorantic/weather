@@ -123,20 +123,20 @@ document.addEventListener('DOMContentLoaded', function () {
       fullscreenControl: false
     });
 
-    window.map = map;
+    app.map = map;
 
     navigator.geolocation.getCurrentPosition(function (position) {
       initMarker({
         lat: position.coords.latitude,
         lng: position.coords.longitude
       });
-      window.marker = marker;
+      app.marker = marker;
     }, function () {
       initMarker({
         lat: 0,
         lng: 0
       });
-      window.marker = marker;
+      app.marker = marker;
     });
 
     map.addListener('click', function (e) {
@@ -435,8 +435,8 @@ var App = function () {
         if (Array.isArray(data.results) && data.results[0] !== undefined && data.results[0].formatted_address !== undefined) {
           _this3.store.dispatch(_this3.actions.address(data.results[0].formatted_address));
           _this3.store.dispatch(_this3.actions.location(data.results[0].geometry.location));
-          window.marker.setPosition(data.results[0].geometry.location);
-          window.map.setCenter(window.marker.getPosition());
+          _this3.marker.setPosition(data.results[0].geometry.location);
+          _this3.map.setCenter(_this3.marker.getPosition());
         } else {
           _this3.store.dispatch(_this3.actions.address('unknown'));
         }
@@ -558,6 +558,7 @@ var App = function () {
     value: function render(state) {
       var items = {};
       var icon = document.querySelector('#icon');
+      var wind = document.querySelector('#wind');
       var address = document.querySelector('#address');
       var units = document.querySelector('#units');
       switch (state.status) {
@@ -592,6 +593,12 @@ var App = function () {
             items['#sky'] = state.weather.weather[0].main;
             icon.setAttribute('src', state.weather.weather[0].icon.split('?')[0]);
             icon.setAttribute('alt', state.weather.weather[0].description);
+          }
+          if (state.weather.wind !== undefined) {
+            wind.setAttribute('src', '../wind.png');
+            wind.style.transform = 'rotate(' + state.weather.wind.deg + 'deg)';
+          } else {
+            icon.setAttribute('src', '');
           }
           Object.keys(items).forEach(function (key) {
             document.querySelector(key).innerHTML = items[key];
