@@ -43,7 +43,7 @@ body {
   display: none;
   justify-content: space-between;
   position: fixed;
-  left: 115px;
+  left: 145px;
   top: 30px;
   width: 130px;
   z-index: 20;
@@ -78,8 +78,8 @@ body {
   padding: 10px;
   left: 10px;
   top: 10px;
-  height: 200px;
-  width: 170px;
+  height: 180px;
+  width: 200px;
   z-index: 10;
 }
 
@@ -87,7 +87,7 @@ body {
   cursor: pointer;
   position: absolute;
   top: 12px;
-  left: 165px;
+  left: 195px;
   width: 0;
   height: 0;
   border-style: solid;
@@ -108,6 +108,12 @@ body {
   flex-direction: row;
 }
 
+.weather__wind {
+  height: 50px;
+  width: 50px;
+  vertical-align: middle;
+}
+
 .weather__main {
   margin-left: 20px;
 }
@@ -119,8 +125,8 @@ body {
 .input {
   position: fixed;
   left: 10px;
-  top: 240px;
-  width: 170px;
+  top: 220px;
+  width: 200px;
   padding: 10px;
   font-size: 1rem;
   outline: none;
