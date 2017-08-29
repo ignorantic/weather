@@ -595,7 +595,7 @@ var App = function () {
             icon.setAttribute('alt', state.weather.weather[0].description);
           }
           if (state.weather.wind !== undefined) {
-            wind.setAttribute('src', '../wind.png');
+            wind.setAttribute('src', './wind.png');
             wind.style.transform = 'rotate(' + state.weather.wind.deg + 'deg)';
           } else {
             icon.setAttribute('src', '');
