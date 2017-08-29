@@ -287,6 +287,7 @@ export default class App {
   static render(state) {
     let items = {};
     const icon = document.querySelector('#icon');
+    const wind = document.querySelector('#wind');
     const address = document.querySelector('#address');
     const units = document.querySelector('#units');
     switch (state.status) {
@@ -322,6 +323,12 @@ export default class App {
           items['#sky'] = state.weather.weather[0].main;
           icon.setAttribute('src', state.weather.weather[0].icon.split('?')[0]);
           icon.setAttribute('alt', state.weather.weather[0].description);
+        }
+        if (state.weather.wind !== undefined) {
+          wind.setAttribute('src', '../wind.png');
+          wind.style.transform = `rotate(${state.weather.wind.deg}deg)`;
+        } else {
+          icon.setAttribute('src', '');
         }
         Object.keys(items).forEach((key) => {
           document.querySelector(key).innerHTML = items[key];
@@ -435,8 +442,8 @@ export default class App {
         && data.results[0].formatted_address !== undefined) {
         this.store.dispatch(this.actions.address(data.results[0].formatted_address));
         this.store.dispatch(this.actions.location(data.results[0].geometry.location));
-        window.marker.setPosition(data.results[0].geometry.location);
-        window.map.setCenter(window.marker.getPosition());
+        this.marker.setPosition(data.results[0].geometry.location);
+        this.map.setCenter(this.marker.getPosition());
       } else {
         this.store.dispatch(this.actions.address('unknown'));
       }

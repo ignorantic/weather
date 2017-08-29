@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fullscreenControl: false,
     });
 
-    window.map = map;
+    app.map = map;
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -61,14 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
-        window.marker = marker;
+        app.marker = marker;
       },
       () => {
         initMarker({
           lat: 0,
           lng: 0,
         });
-        window.marker = marker;
+        app.marker = marker;
       },
     );
 
